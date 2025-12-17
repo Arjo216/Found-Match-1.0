@@ -1,0 +1,14 @@
+torch>=2.0
+sentence-transformers>=2.2.2
+pandas
+numpy
+scikit-learn
+tqdm
+uvicorn
+fastapi
+python-multipart
+pydantic
+# PyG (pytorch-geometric) install varies by torch version and OS.
+# Use the official install instructions for torch-geometric: https://pytorch-geometric.readthedocs.io/
+# For CPU-only quick start you can install a simpler lightgcn implementation via a pip repo below:
+torch-geometric

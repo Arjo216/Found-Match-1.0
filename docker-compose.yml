@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  # --- BACKEND SERVICE ---
+  api:
+    build:
+      context: .
+      dockerfile: Web-Dev 2.0/Dockerfile
+    # vvv ADD THIS LINE vvv
+    working_dir: /app/backend
+    # ^^^^^^^^^^^^^^^^^^^^^
+    ports:
+      - "8000:8000"
+    volumes:
+      - "./Web-Dev 2.0:/app/backend"  # Quote this path!
+      - "./ml_engine:/app/ml_engine"
+      - "./data:/app/data"
+    env_file:
+      - ./Web-Dev 2.0/.env        # Point to your backend .env
+    environment:
+      - CORS_ORIGINS=http://localhost:3000
+
+  # --- FRONTEND SERVICE ---
+  web:
+    build:
+      context: .
+      dockerfile: Frontend/Frontend/Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+    depends_on:
+      - api
+    # Add this section to fix network stability:
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4

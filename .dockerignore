@@ -1,0 +1,38 @@
+# --- Security ---
+.git
+.gitignore
+.env
+
+# --- Recursive Ignores ---
+# ** means "look in every subfolder"
+**/node_modules
+**/venv
+**/env
+**/.venv
+**/__pycache__
+**/.next
+**/.npm
+
+# --- Python Junk ---
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# --- Frontend Builds ---
+build/
+dist/
+coverage/
+
+# --- Heavy Media ---
+*.mp4
+*.mkv
+Telegram*
+
+# --- IDE Settings ---
+.vscode/
+.idea/
+*.swp
+*.swo
+*.log
+tmp/

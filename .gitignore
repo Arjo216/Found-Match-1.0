@@ -1,0 +1,45 @@
+# --- Security (CRITICAL) ---
+# Never upload your passwords or API keys
+.env
+.env.local
+.env.production
+
+# --- Python & Virtual Environments ---
+# These are generated locally and should not be shared
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+
+# --- Frontend (Node/React/Next.js) ---
+# These folders are massive and re-installed via 'npm install'
+node_modules/
+.next/
+build/
+dist/
+coverage/
+.npm/
+*.log
+
+# --- IDE Settings ---
+# Personal editor settings don't belong in the repo
+.vscode/
+.idea/
+*.swp
+
+# --- Machine Learning Artifacts ---
+# Typically, we don't commit large model weights or huge datasets.
+# If your .pth file is >100MB, GitHub will reject the push unless you use Git LFS.
+# Uncomment the lines below if your model file gets too big:
+ data/*.pth
+#data/foundmatch_graph.pth
+
+# --- System Files ---
+.DS_Store
+Thumbs.db
+*.tar
