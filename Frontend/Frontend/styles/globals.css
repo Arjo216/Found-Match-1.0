@@ -1,18 +1,14 @@
-/* styles/globals.css - REPLACE CONTENT WITH THIS */
-
-/* Tailwind directives (keep) */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Plain CSS for base page background and text (avoid using @apply here) */
 :root {
-  --page-bg: #fcf8f9;
-  --page-foreground: #0f172a;
-  --muted: #6b7280;
+  /* The "Midnight" Theme - replacing your white background */
+  --page-bg: #0f172a; /* Deep Slate Blue */
+  --page-foreground: #f8fafc; /* Crisp White text */
+  --muted: #94a3b8;
 }
 
-/* Use plain CSS here to avoid Tailwind @apply resolution issues */
 html, body {
   background-color: var(--page-bg);
   color: var(--page-foreground);
@@ -21,25 +17,21 @@ html, body {
   padding: 0;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* Adding a subtle radial gradient for depth */
+  background-image: radial-gradient(circle at top right, rgba(139, 92, 246, 0.1), transparent 40%),
+                    radial-gradient(circle at bottom left, rgba(6, 182, 212, 0.1), transparent 40%);
+  background-attachment: fixed;
 }
 
-/* small helper utilities you added previously */
-
-@keyframes float-up {
-  0% { transform: translateY(6px); opacity: 0.98; }
-  50% { transform: translateY(0); opacity: 1; }
-  100% { transform: translateY(6px); opacity: 0.98; }
-}
-
-/* Glass utility (backdrop + blur + subtle border) */
+/* Upgraded Glass utility for the dark theme */
 .glass {
-  background: rgba(255, 255, 255, 0.6);
-  backdrop-filter: blur(8px) saturate(120%);
-  -webkit-backdrop-filter: blur(8px) saturate(120%);
-  border: 1px solid rgba(255,255,255,0.45);
+  background: rgba(30, 41, 59, 0.4); /* Darker translucent background */
+  backdrop-filter: blur(12px) saturate(150%);
+  -webkit-backdrop-filter: blur(12px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
 }
 
-/* Toast positioning helper (center bottom) */
 .toast-center {
   position: fixed;
   bottom: 28px;
@@ -48,15 +40,18 @@ html, body {
   z-index: 60;
 }
 
-/* subtle card shadow */
+/* Updated shadow for dark mode */
 .shadow-soft {
-  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
 }
 
-/* small fade-in */
-.fade-in { animation: fadeIn 260ms ease both; }
-@keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
-/* add to styles/globals.css */
-.shadow-soft { box-shadow: 0 10px 30px rgba(15,23,42,0.06); }
-.fade-in { animation: fadeIn 260ms ease both; }
-@keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+.fade-in { animation: fadeIn 400ms ease-out both; }
+@keyframes fadeIn { 
+  from { opacity: 0; transform: translateY(10px); } 
+  to { opacity: 1; transform: translateY(0); } 
+}
+
+/* The "Glow" Text Effect for your main headlines */
+.text-glow {
+  text-shadow: 0 0 25px rgba(6, 182, 212, 0.6);
+}

@@ -1,44 +1,44 @@
 // components/FoundersPreview.tsx
 import React from "react";
 import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 
 const sample = [
-  { id: "f-1", name: "Anaya Patel", domain: "SaaS", stage: "Pre-seed", tagline: "1k MRR, growth" },
-  { id: "f-2", name: "Vikram Iyer", domain: "Fintech", stage: "Seed", tagline: "Pilot in two banks" },
-  { id: "f-3", name: "Sara Khan", domain: "Healthcare", stage: "Pre-seed", tagline: "Clinical partners secured" },
+  { id: "f-1", name: "Anaya Patel", domain: "SaaS", stage: "Pre-seed", tagline: "1k MRR, scaling rapidly", match: "94%" },
+  { id: "f-2", name: "Vikram Iyer", domain: "FinTech", stage: "Seed", tagline: "Pilot secured in two major banks", match: "88%" },
+  { id: "f-3", name: "Sara Khan", domain: "HealthTech", stage: "Pre-seed", tagline: "Key clinical partners secured", match: "91%" },
 ];
 
 export default function FoundersPreview() {
   return (
-    <section className="bg-slate-50">
-      <div className="max-w-7xl mx-auto px-6 lg:px-8 py-16">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-xl font-bold text-slate-900">Founder profiles</h3>
-            <p className="text-slate-600 mt-1">Showcase your idea, traction and raise smarter.</p>
-          </div>
-
-          <Link href="/projects" className="text-sm text-indigo-600">View all projects →</Link>
+    <div className="py-12">
+      <div className="flex flex-col md:flex-row items-start md:items-end justify-between mb-12 gap-4">
+        <div>
+          <h3 className="text-3xl font-black text-white tracking-tight">Founder Profiles</h3>
+          <p className="text-slate-400 mt-2 text-lg">Showcase your traction and raise capital smarter.</p>
         </div>
-
-        <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {sample.map((s) => (
-            <div key={s.id} className="bg-white rounded-xl p-4 shadow-sm">
-              <div className="flex items-start justify-between">
-                <div>
-                  <div className="text-sm text-gray-500">{s.domain} • {s.stage}</div>
-                  <div className="mt-2 font-semibold">{s.name}</div>
-                  <div className="text-sm text-gray-600 mt-1">{s.tagline}</div>
-                </div>
-
-                <div className="ml-4">
-                  <Link href={`/profile/view?id=${s.id}`} className="text-sm text-indigo-600">View</Link>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+        <Link href="/projects" className="text-sm font-bold text-cyan-400 hover:text-cyan-300 flex items-center gap-1 group no-underline bg-cyan-500/10 px-6 py-3 rounded-full border border-cyan-500/20 transition-all">
+          View all projects <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+        </Link>
       </div>
-    </section>
+
+      <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+        {sample.map((s) => (
+          <div key={s.id} className="glass rounded-3xl p-8 border border-white/5 hover:border-cyan-500/40 transition-all relative overflow-hidden group bg-slate-900/40 backdrop-blur-md">
+            <div className="flex justify-between items-start mb-6">
+              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">{s.domain} • {s.stage}</span>
+              <span className="text-[10px] font-black bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 px-3 py-1 rounded-full">{s.match} Match</span>
+            </div>
+            
+            <div className="text-2xl font-black text-white mb-2">{s.name}</div>
+            <div className="text-sm text-slate-400 mb-8 h-10 leading-relaxed font-medium">{s.tagline}</div>
+            
+            <Link href={`/profile/view?id=${s.id}`} className="inline-flex w-full justify-center items-center py-4 rounded-xl bg-slate-800 text-cyan-400 text-sm font-bold hover:bg-slate-700 transition-all border border-white/10 hover:border-cyan-500/30 no-underline shadow-lg">
+              View Pitch Deck
+            </Link>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
