@@ -1,24 +1,22 @@
+# routers/match.py
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
-from typing import List, Dict, Any
-from typing import Optional
+from typing import List, Dict, Any, Optional
 
 # Internal imports
 from database import get_db
 from routers.auth import get_current_user
 import models
 import schemas
-
-# Import our new Centralized AI Loader
 from utils.match import get_ai_engine
-
 
 router = APIRouter(tags=["Match"])
 
 # --- MODELS ---
 class SwipeIn(BaseModel):
-    target_id: int
+    target_id: str
+    #target_id: int
     liked: bool
     type: str = "swipe"
 
@@ -35,13 +33,11 @@ async def get_ai_match_score(req: AI_MatchRequest):
     """
     Returns a match percentage (0-100%) using the Central AI Engine.
     """
-    # 1. Get the Engine (Auto-initializes if needed)
     ai_engine = get_ai_engine()
     
     if ai_engine is None:
         raise HTTPException(status_code=500, detail="AI System Offline or Failed to Load")
         
-    # 2. Predict
     score = ai_engine.predict_match_score(
         investor_text=req.investor_thesis,
         startup_text=req.startup_pitch,
@@ -49,7 +45,6 @@ async def get_ai_match_score(req: AI_MatchRequest):
         startup_id=req.startup_id
     )
     
-    # 3. Format Response
     if score > 85: rec = "Perfect Match"
     elif score > 70: rec = "Strong Match"
     elif score > 50: rec = "Potential Match"
@@ -63,7 +58,6 @@ async def get_ai_match_score(req: AI_MatchRequest):
 
 @router.post("/swipe", status_code=status.HTTP_200_OK)
 def swipe_target(payload: SwipeIn, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
-    # ensure target exists
     target = db.query(models.Profile).filter(models.Profile.id == payload.target_id).first()
     if not target:
         raise HTTPException(status_code=404, detail="Target profile not found")
@@ -84,63 +78,85 @@ def get_matches(
     search: Optional[str] = None,
     domain: Optional[str] = None,
     stage: Optional[str] = None,
-    role: Optional[str] = None, # Frontend sends this, we can use or ignore
+    role: Optional[str] = None, 
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ) -> Dict[str, List[schemas.MatchOut]]:
     """
-    Retrieve matches with OPTIONAL FILTERS (Search, Domain, Stage).
+    Retrieve matches dynamically scored by the AI Engine based on Bios AND Projects.
     """
     # 1. Get Current User Profile
     profile = db.query(models.Profile).filter(models.Profile.user_id == current_user.id).first()
     if profile is None:
         raise HTTPException(404, "Profile not found.")
 
-    # 2. Determine Opposite Role (Founders see Investors, Investors see Founders)
-    # If the frontend sends a specific role filter, we can respect it, otherwise default to opposite
     target_role = "investor" if profile.role == "founder" else "founder"
-    
-    # 3. Build the Query
     query = db.query(models.Profile).filter(models.Profile.role == target_role)
 
-    # --- APPLY FILTERS ---
+    # Apply Filters
     if search:
-        # Search by Name (Case insensitive)
         query = query.filter(models.Profile.full_name.ilike(f"%{search}%"))
-    
     if domain:
-        # Simple text match for domain/interests
-        # Note: In a real app, you might split commas. Here we check if the string exists.
         query = query.filter(models.Profile.interests.ilike(f"%{domain}%"))
 
-    # Execute Query
     candidates = query.all()
 
-    # 4. Score & Return (Using AI Engine if available, or fallback)
-    matches = []
-    # Try to load AI engine (fail gracefully if not set up yet)
+    # 2. Try to load AI engine
     try:
-        from utils.match import get_ai_engine
         ai_engine = get_ai_engine()
     except:
         ai_engine = None
 
-    my_text = profile.interests if profile.interests else "General"
+    # --- THE UPGRADE: BUILD RICH ML CONTEXT FOR CURRENT USER ---
+    # We combine bio and interests for a stronger base semantic footprint
+    my_text = f"{profile.bio or ''} {profile.interests or ''}".strip() or "General"
+    
+    # If the current user is a Founder, inject ALL their projects into the ML Context
+    if profile.role == "founder":
+        my_projects = db.query(models.Project).filter(models.Project.user_id == profile.user_id).all()
+        for p in my_projects:
+            my_text += f" [PROJECT: {p.title}. DOMAIN: {p.domain}. PITCH: {p.description}."
+            if p.tags:
+                my_text += f" TAGS: {', '.join(p.tags)}.]"
 
+    matches = []
+    
+    # 3. Build Context for Candidates and Score Them
     for candidate in candidates:
-        cand_text = candidate.interests if candidate.interests else "General"
+        cand_text = f"{candidate.bio or ''} {candidate.interests or ''}".strip() or "General"
+        
+        # --- THE UPGRADE: FETCH PROJECTS FOR CANDIDATE FOUNDERS ---
+        if candidate.role == "founder":
+            cand_projects = db.query(models.Project).filter(models.Project.user_id == candidate.user_id).all()
+            for p in cand_projects:
+                cand_text += f" [PROJECT: {p.title}. DOMAIN: {p.domain}. PITCH: {p.description}."
+                if p.tags:
+                    cand_text += f" TAGS: {', '.join(p.tags)}.]"
         
         # Calculate AI Score
-        score = 50.0 # Default
+        score = 50.0 # Default fallback
         if ai_engine:
             try:
-                # Map IDs based on roles
+                # Map inputs correctly based on roles
                 if profile.role == "founder":
-                    score = ai_engine.predict_match_score(cand_text, my_text, candidate.id, profile.id)
+                    # We are founder (startup_text), they are investor (investor_text)
+                    score = ai_engine.predict_match_score(
+                        investor_text=cand_text, 
+                        startup_text=my_text, 
+                        investor_id=candidate.id, 
+                        startup_id=profile.id
+                    )
                 else:
-                    score = ai_engine.predict_match_score(my_text, cand_text, profile.id, candidate.id)
-            except:
-                pass # Keep default if AI fails
+                    # We are investor (investor_text), they are founder (startup_text)
+                    score = ai_engine.predict_match_score(
+                        investor_text=my_text, 
+                        startup_text=cand_text, 
+                        investor_id=profile.id, 
+                        startup_id=candidate.id
+                    )
+            except Exception as e:
+                print(f"Scoring error for candidate {candidate.id}: {e}")
+                pass 
 
         matches.append({
             "profile_id": candidate.id,
@@ -153,7 +169,46 @@ def get_matches(
             "interests": candidate.interests
         })
 
-    # Sort by score
+    # Sort by highest score first
     matches.sort(key=lambda x: x["match_score"], reverse=True)
 
     return {"matches": matches}
+
+@router.get("/network")
+def get_network(
+    db: Session = Depends(get_db), 
+    current_user: models.User = Depends(get_current_user)
+):
+    """
+    Retrieve all professional connections (profiles the user clicked 'Connect' on).
+    """
+    # 1. Find all positive interactions (Connects) sent by the current user
+    outbound_requests = db.query(models.MatchSwipe).filter(
+        models.MatchSwipe.user_id == current_user.id,
+        models.MatchSwipe.liked == True
+    ).all()
+    
+    # Extract the profile IDs
+    target_profile_ids = [req.target_profile_id for req in outbound_requests]
+    
+    if not target_profile_ids:
+        return {"connections": []}
+        
+    # 2. Fetch the actual profiles for those IDs
+    connected_profiles = db.query(models.Profile).filter(models.Profile.id.in_(target_profile_ids)).all()
+    
+    # 3. Format the response
+    results = []
+    for p in connected_profiles:
+        results.append({
+            "id": p.id,
+            "profile_id": p.id,
+            "user_id": p.user_id,
+            "full_name": p.full_name,
+            "role": p.role,
+            "domain": p.interests, 
+            "location": p.location,
+            "headline": p.bio[:100] + "..." if p.bio and len(p.bio) > 100 else p.bio
+        })
+        
+    return {"connections": results}

@@ -6,6 +6,7 @@ import Hero from "../components/Hero";
 import FeatureGrid from "../components/FeatureGrid";
 import FoundersPreview from "../components/FoundersPreview";
 import CTABar from "../components/CTABar";
+//Simport AICoPilot from "../components/AICoPilot"; // <-- IMPORT THE AI AGENT
 
 export default function HomePage() {
   return (
@@ -84,6 +85,10 @@ export default function HomePage() {
 
       {/* Persistent CTA Bar */}
       <CTABar />
+
+      {/* --- THE AI CO-PILOT WIDGET --- */}
+      {/* We pass profileId={7} as a hardcoded test so it can read your DB context! */}
+
     </Layout>
   );
 }

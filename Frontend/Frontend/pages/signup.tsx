@@ -29,6 +29,8 @@ export default function SignupPage() {
       };
 
       await auth.signup(payload);
+      
+      // Successful Signup! Redirect them to login so they can authenticate
       router.replace("/login?signup=success");
       
     } catch (err: any) {
@@ -43,7 +45,6 @@ export default function SignupPage() {
     <Layout>
       <div className="min-h-[85vh] flex items-center justify-center px-4 py-8 md:py-12 relative">
         
-        {/* Background Ambient Orbs - Lowered Z-index to ensure they stay in back */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-3xl h-[400px] md:h-[500px] bg-purple-600/10 rounded-full blur-[80px] md:blur-[120px] pointer-events-none z-0"></div>
 
         <motion.div 
@@ -71,7 +72,6 @@ export default function SignupPage() {
           </AnimatePresence>
 
           <div className="space-y-4 md:space-y-5">
-            {/* Role Selection - Forced Pointer Events and specific Z-index */}
             <div className="relative z-30">
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2 ml-1">I am registering as a...</label>
               <div className="grid grid-cols-2 gap-3">
@@ -100,7 +100,6 @@ export default function SignupPage() {
               </div>
             </div>
 
-            {/* Form Fields */}
             <div className="space-y-4">
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5 ml-1">Full Legal Name</label>

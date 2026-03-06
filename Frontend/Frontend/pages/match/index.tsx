@@ -6,6 +6,8 @@ import { api } from "../../lib/api";
 import MatchCard from "../../components/match/MatchCard";
 import FilterBar from "../../components/match/FilterBar";
 import DetailDrawer from "../../components/match/DetailDrawer";
+import ChatWindow from "../../components/ChatWindow"; 
+import { useAuth } from "../../context/AuthContext"; // <-- 1. IMPORT REAL AUTH
 
 type ProfileItem = {
   id: string | number;
@@ -29,14 +31,24 @@ export default function MatchPage() {
   const [filters, setFilters] = useState<Record<string, any>>({});
   const [selected, setSelected] = useState<ProfileItem | null>(null);
 
+  // --- CHAT STATE ---
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [activeChatUser, setActiveChatUser] = useState<ProfileItem | null>(null);
+  const [chatPrefill, setChatPrefill] = useState<string>(""); 
+  
+  // <-- 2. GET THE REAL LOGGED-IN USER ID DYNAMICALLY
+  const { user } = useAuth();
+  const currentUserId = user?.user_id || user?.id || "";
+
   const loadMatches = useCallback(async (params: Record<string, any> = {}) => {
     setLoading(true);
     setError(null);
     try {
-      // Primary endpoint (your backend router implements GET /match/)
+      // This hits your FastAPI backend and pulls the PyTorch/GNN scored profiles!
       const r = await api.get("/match/", { params });
       const data = r?.data;
       let list: ProfileItem[] = [];
+      
       if (Array.isArray(data)) list = data;
       else if (Array.isArray(data?.matches)) list = data.matches;
       else if (Array.isArray(data?.results)) list = data.results;
@@ -46,7 +58,6 @@ export default function MatchPage() {
         if (Array.isArray(maybe)) list = maybe;
         else {
           setError("Unexpected /match/ response shape. See console for payload.");
-          console.warn("Unexpected /match/ payload:", data);
           setItems([]);
           return;
         }
@@ -55,15 +66,10 @@ export default function MatchPage() {
     } catch (e: any) {
       console.error("Failed to load match feed", e);
       const status = e?.response?.status;
-      if (status === 401) {
-        setError("Authentication required — please login and create your profile.");
-      } else if (status === 404) {
-        setError("Matches endpoint not found on backend (404). Confirm routing /match/.");
-      } else if (status === 422) {
-        setError("Validation failed when requesting matches: " + JSON.stringify(e?.response?.data || e?.message));
-      } else {
-        setError("Failed to load feed: " + (e?.message || String(e)));
-      }
+      if (status === 401) setError("Authentication required — please login and create your profile.");
+      else if (status === 404) setError("Matches endpoint not found on backend (404). Confirm routing /match/.");
+      else if (status === 422) setError("Validation failed when requesting matches.");
+      else setError("Failed to load feed: " + (e?.message || String(e)));
       setItems([]);
     } finally {
       setLoading(false);
@@ -74,21 +80,15 @@ export default function MatchPage() {
     loadMatches(filters);
   }, [loadMatches, filters]);
 
-  /**
-   * Ensure ML prediction exists for a profile.
-   * - Calls backend inference endpoint (adjust path if different)
-   * - merges results into `items` state and updates `selected` if it's the same profile
-   */
   const ensurePredictionFor = useCallback(async (profile: ProfileItem) => {
-    if (!profile?.id) return null;
-    // if score already present, return it
+    const targetId = profile.profile_id || profile.id || profile.user_id;
+    if (!targetId) return null;
     if (typeof profile.match_score === "number" || typeof profile.score === "number") {
       return profile.match_score ?? profile.score;
     }
 
     try {
-      // call ML endpoint (adjust path if your backend uses /ml/predict or /match/predict)
-      const res = await api.post("/ml/predict", { profile_id: profile.id });
+      const res = await api.post("/ml/predict", { profile_id: targetId });
       const out = res?.data || {};
       let ms: number | null = null;
       if (typeof out.match_score === "number") ms = out.match_score;
@@ -101,14 +101,14 @@ export default function MatchPage() {
       const rec = out.recommendation ?? out.label ?? null;
 
       if (ms !== null) {
-        const idStr = String(profile.id);
-        setItems((prev) => prev.map((it) => (String(it.id) === idStr ? { ...it, match_score: ms, recommendation: rec } : it)));
-        setSelected((s) => (s && String(s.id) === idStr ? { ...s, match_score: ms, recommendation: rec } : s));
+        const idStr = String(targetId);
+        setItems((prev) => prev.map((it) => (String(it.id) === idStr || String(it.profile_id) === idStr ? { ...it, match_score: ms, recommendation: rec } : it)));
+        setSelected((s) => (s && (String(s.id) === idStr || String(s.profile_id) === idStr) ? { ...s, match_score: ms, recommendation: rec } : s));
         return ms;
       }
       return null;
     } catch (err) {
-      console.warn("Prediction request failed for", profile.id, err);
+      console.warn("Prediction request failed for", targetId, err);
       return null;
     }
   }, []);
@@ -118,20 +118,43 @@ export default function MatchPage() {
     loadMatches(next);
   };
 
-  // open detail drawer: ensure prediction first, then open with freshest item state
   const openProfileDetail = useCallback(
     async (p: ProfileItem) => {
       await ensurePredictionFor(p);
-      // use latest item data from items state (in case prediction updated it)
-      const fresh = items.find((it) => String(it.id) === String(p.id)) ?? p;
-      setSelected(fresh);
+      setSelected(p);
     },
-    [ensurePredictionFor, items]
+    [ensurePredictionFor]
   );
+
+  const handleOpenChat = (profile: ProfileItem) => {
+    if (!currentUserId) {
+      alert("Please log in to initiate secure messaging.");
+      return;
+    }
+    setActiveChatUser(profile);
+    setIsChatOpen(true);
+  };
+
+  const handleInteraction = async (targetId: string | number, isConnect: boolean) => {
+    try {
+      await api.post("/match/swipe", {
+        target_id: String(targetId),
+        liked: isConnect,
+        type: isConnect ? "connect" : "skip" 
+      });
+
+      if (!isConnect) {
+        setItems((prev) => prev.filter((m) => String(m.id) !== String(targetId) && String(m.profile_id) !== String(targetId)));
+      }
+    } catch (err) {
+      console.error("Failed to record interaction:", err);
+      throw err; 
+    }
+  };
 
   return (
     <Layout>
-      <div className="max-w-7xl mx-auto px-6 py-12">
+      <div className="max-w-7xl mx-auto px-6 py-12 relative">
         <h1 className="text-3xl font-extrabold mb-6">Find Matches</h1>
 
         <FilterBar onApply={onApplyFilters} initialFilters={filters} />
@@ -146,13 +169,10 @@ export default function MatchPage() {
                 <button onClick={() => loadMatches(filters)} className="px-3 py-1 bg-red-600 text-white rounded">
                   Retry
                 </button>
-
-                {/* New Link API (no <a> children) */}
-                <Link href="/login" className="px-3 py-1 border rounded">
+                <Link href="/login" className="px-3 py-1 border rounded text-slate-800">
                   Login
                 </Link>
-
-                <Link href="/profile/setup" className="px-3 py-1 border rounded">
+                <Link href="/profile/setup" className="px-3 py-1 border rounded text-slate-800">
                   Create profile
                 </Link>
               </div>
@@ -171,24 +191,54 @@ export default function MatchPage() {
 
           {!loading && items.length > 0 && (
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 mt-4">
-              {items.map((p) => (
-                <MatchCard
-                  key={String(p.id)}
-                  profile={p}
-                  onView={() => openProfileDetail(p)}
-                  fetchPrediction={() => ensurePredictionFor(p)}
-                />
-              ))}
+              {items.map((p, index) => {
+                const realId = p.profile_id || p.id || p.user_id || index;
+                const normalizedProfile = { ...p, id: realId, profile_id: realId };
+
+                return (
+                  <MatchCard
+                    key={String(realId)}
+                    profile={normalizedProfile}
+                    onView={() => openProfileDetail(normalizedProfile)}
+                    fetchPrediction={() => ensurePredictionFor(normalizedProfile)}
+                    onMessage={() => handleOpenChat(normalizedProfile)} 
+                    onInteract={handleInteraction}
+                  />
+                );
+              })}
             </div>
           )}
         </div>
 
         <DetailDrawer
-          profileId={selected ? String(selected.id) : null}
+          profileId={selected ? String(selected.profile_id || selected.id) : null}
           open={!!selected}
           onClose={() => setSelected(null)}
           initialProfile={selected ?? undefined}
+          onMessage={(prefillMsg) => {
+            if (selected) {
+              setChatPrefill(prefillMsg || ""); 
+              handleOpenChat(selected);
+              setSelected(null);        
+            }
+          }}
         />
+
+        {/* --- SECURE CHAT WINDOW INJECTION --- */}
+        {isChatOpen && activeChatUser && (
+          <ChatWindow
+            currentUserId={String(currentUserId)} // <-- 3. INJECT THE REAL ID
+            receiverId={String(activeChatUser.user_id || activeChatUser.id)}
+            receiverName={activeChatUser.full_name || "Unknown User"}
+            receiverRole={activeChatUser.domain || "Partner"}
+            initialMessage={chatPrefill}
+            onClose={() => {
+              setIsChatOpen(false);
+              setActiveChatUser(null);
+              setChatPrefill("");
+            }}
+          />
+        )}
       </div>
     </Layout>
   );

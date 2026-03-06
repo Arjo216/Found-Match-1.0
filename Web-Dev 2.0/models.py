@@ -2,8 +2,7 @@ from sqlalchemy import Column, Integer, String, Boolean, Text, DateTime, Foreign
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from datetime import datetime
-from sqlalchemy.dialects.postgresql import UUID as PG_UUID
-from sqlalchemy.dialects.sqlite import BLOB as SQLITE_BLOB
+from sqlalchemy import JSON
 import uuid
 
 from database import Base, engine
@@ -14,6 +13,7 @@ IS_SQLITE = engine.url.get_backend_name() == "sqlite"
 # Cross-DB GUID/UUID type
 if IS_SQLITE:
     from sqlalchemy.types import TypeDecorator
+    from sqlalchemy.dialects.sqlite import BLOB as SQLITE_BLOB
 
     class GUID(TypeDecorator):
         impl = SQLITE_BLOB
@@ -31,6 +31,7 @@ if IS_SQLITE:
                 return None
             return uuid.UUID(bytes=value)
 else:
+    from sqlalchemy.dialects.postgresql import UUID as PG_UUID
     GUID = PG_UUID
 
 
@@ -47,6 +48,8 @@ class User(Base):
     hashed_password = Column(Text, nullable=False)
     is_investor = Column(Boolean, default=False, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    # 🛡️ NEW: The E2EE Public Key storage
+    public_key = Column(Text, nullable=True)
 
     profile = relationship("Profile", back_populates="user", uselist=False, cascade="all, delete")
     projects = relationship("Project", back_populates="user", cascade="all, delete")
@@ -58,7 +61,11 @@ class User(Base):
         "Match", back_populates="investor",
         foreign_keys="Match.investor_id", cascade="all, delete"
     )
-
+    # Added relationship for swipes
+    swipes = relationship("MatchSwipe", back_populates="user", cascade="all, delete")
+    #kyc_verified = Column(Boolean, default=False, nullable=False)
+    #kyc_document_type = Column(String(50), nullable=True) # 'PAN' or 'AADHAAR'
+    #kyc_document_id = Column(String(100), nullable=True) # Masked for security
 
 class Profile(Base):
     __tablename__ = "profiles"
@@ -75,9 +82,13 @@ class Profile(Base):
     interests = Column(Text)
     role = Column(String(20), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    # 🛡️ NEW: The E2EE Public Key storage
+    public_key = Column(Text, nullable=True)
 
     user = relationship("User", back_populates="profile")
     matches = relationship("Match", back_populates="profile", cascade="all, delete")
+    # Added relationship for receiving swipes
+    swipes_received = relationship("MatchSwipe", back_populates="target_profile", cascade="all, delete")
 
 
 class Project(Base):
@@ -93,6 +104,11 @@ class Project(Base):
     description = Column(Text, nullable=False)
     domain = Column(String(100), nullable=False)
     funding_goal = Column(Integer, nullable=False)
+    
+    # ADD THESE TWO LINES:
+    stage = Column(String(50), nullable=True) 
+    tags = Column(JSON, nullable=True) # Stores the array of strings
+    
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     user = relationship("User", back_populates="projects")
@@ -130,15 +146,35 @@ class Match(Base):
         foreign_keys=[investor_id]
     )
 
-    class MatchSwipe(Base):
-     __tablename__ = "match_swipes"
+
+# Un-nested and fixed MatchSwipe class
+class MatchSwipe(Base):
+    __tablename__ = "match_swipes"
+    
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)     # who swiped
-    target_profile_id = Column(Integer, ForeignKey("profiles.id"), nullable=False)
+    # Fixed Type Mismatch: Changed Integer to GUID(as_uuid=True) to match users.id
+    user_id = Column(GUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)     
+    target_profile_id = Column(Integer, ForeignKey("profiles.id", ondelete="CASCADE"), nullable=False)
     liked = Column(Boolean, nullable=False)
     type = Column(String(20), default="swipe")  # swipe | super
     created_at = Column(DateTime, default=datetime.utcnow)
+    
+    # Relationships for easier querying later
+    user = relationship("User", back_populates="swipes")
+    target_profile = relationship("Profile", back_populates="swipes_received")
 
+class Message(Base):
+    __tablename__ = "messages"
+
+    id = Column(Integer, primary_key=True, index=True)
+    sender_id = Column(GUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    receiver_id = Column(GUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    content = Column(Text, nullable=False)
+    timestamp = Column(DateTime(timezone=True), server_default=func.now())
+
+    # Relationships to easily fetch sender and receiver details
+    sender = relationship("User", foreign_keys=[sender_id])
+    receiver = relationship("User", foreign_keys=[receiver_id])
 
 # Ensure tables exist
 Base.metadata.create_all(bind=engine)

@@ -1,50 +1,58 @@
 
 
-# 🚀 FoundMatch - Frontend
+### 2. The Frontend (`frontend/README.md`)
+*This focuses on your stunning glassmorphism UI, client-side encryption logic, and responsive design.*
 
-**FoundMatch** is the premier AI-driven matchmaking platform for startup founders and investors. This repository contains the **Frontend** application, built with modern web technologies to provide a sleek, "Tinder-like" discovery experience and a professional dashboard for managing fundraising/deal flow.
+```markdown
+<div align="center">
+  
+# 🎨 FoundMatch - Frontend Application
 
-![FoundMatch Banner](https://via.placeholder.com/1200x400?text=FoundMatch+Dashboard+Preview)
+**Next.js 14 • Tailwind CSS • Framer Motion • Web Crypto API**
 
-## 📖 Table of Contents
+*The user-facing command center for FoundMatch. Engineered for absolute privacy, real-time communication, and a frictionless, high-fidelity user experience.*
 
-- [✨ Features](#-features)
-- [🏗️ Tech Stack](#️-tech-stack)
-- [⚡ Getting Started](#-getting-started)
-  - [Prerequisites](#prerequisites)
-  - [Installation](#installation)
-- [🎨 Design System](#-design-system)
-- [🔧 Configuration](#-configuration)
-- [Scripts](#scripts)
+</div>
 
-## ✨ Features
+## ✨ Key Features
 
-- **AI Match Feed:** Curated list of investors/startups ranked by our Hybrid AI engine (LightGCN + SBERT).
-- **Smart Filters:** Real-time filtering by Domain (e.g., AI, FinTech), Stage (Seed, Series A), and Role.
-- **Match Score Badges:** Visual "Confidence Score" (e.g., 94% Match) displayed on every card.
-- **Swipe Interface:** Interactive card-based discovery for quick shortlisting.
-- **Secure Authentication:** Role-based login (Founder vs. Investor) via JWT.
-- **Modern UI/UX:** Responsive design with smooth animations and glass-morphism effects.
+- **Institutional Glassmorphism UI:** A premium, dark-mode design system utilizing `backdrop-blur`, complex gradient meshes, and responsive CSS grids.
+- **Zero-Knowledge Client (E2EE):** Integrates the native browser Web Crypto API. Generates and stores RSA public/private key pairs locally to encrypt chat streams and binary file buffers before they ever touch the network.
+- **Real-Time Deal Rooms:** Seamless WebSocket integration for instant, encrypted founder-investor communications.
+- **Interactive Kanban CRM:** Native HTML5 Drag-and-Drop deal flow management (Sourced ➡️ Term Sheet ➡️ Closed).
+- **Executive AI Co-Pilot:** A stunning, centralized modal interface for interacting with the platform's AI, complete with context-aware smart suggestions and file staging.
 
-## 🏗️ Built With
+## 🏗️ The "Pro" Tech Stack
 
-This project uses the **"Pro Stack"** for high-performance React applications:
-
-- **Framework:** [Next.js 14](https://nextjs.org/) (App Router)
-- **Language:** [TypeScript](https://www.typescriptlang.org/)
-- **Styling:** [Tailwind CSS](https://tailwindcss.com/)
-- **Component Library:** [Shadcn/UI](https://ui.shadcn.com/) (Radix Primitives)
-- **Animations:** [Framer Motion](https://www.framer.com/motion/)
+- **Framework:** [Next.js 14](https://nextjs.org/) (React)
+- **Language:** [TypeScript](https://www.typescriptlang.org/) for strict type safety.
+- **Styling:** [Tailwind CSS](https://tailwindcss.com/) for utility-first styling.
+- **Animations:** [Framer Motion](https://www.framer.com/motion/) for fluid layout transitions and modal orchestration.
+- **Data Visualization:** [Recharts](https://recharts.org/) for dynamic metric rendering.
 - **Icons:** [Lucide React](https://lucide.dev/)
-- **State Management:** React Hooks & Context
-- **Package Manager:** [pnpm](https://pnpm.io/)
 
-## ⚡ Getting Started
+## ⚡ Getting Started (Local Development)
 
-### Prerequisites
+### 1. Prerequisites
+Ensure you have **Node.js (>= 18.x)** and **pnpm** installed.
+```bash
+npm install -g pnpm
 
-Ensure you have the following installed:
-- **Node.js** (>= 18.x)
-- **pnpm** (Recommended package manager)
-  ```bash
-  npm install -g pnpm
+2. Installation & Execution
+```Bash
+# Navigate to the frontend directory
+cd frontend
+
+# Install dependencies
+pnpm install
+
+# Start the development server
+pnpm run dev
+Navigate to http://localhost:3000 to view the application.
+
+🧹 Cache Management
+If you make significant UI architectural changes, clear the Next.js cache to force a Tailwind recompilation:
+
+```Bash
+rm -rf .next
+pnpm run dev

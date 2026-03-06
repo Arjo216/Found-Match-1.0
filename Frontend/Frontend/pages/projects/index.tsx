@@ -11,16 +11,14 @@ import {
   YAxis,
   Tooltip,
   ResponsiveContainer,
+  Cell,
 } from "recharts";
 import { useRouter } from "next/router";
 
 export default function ProjectsPage() {
   const router = useRouter();
-
   const [projects, setProjects] = useState<ProjectItem[]>([]);
   const [loading, setLoading] = useState(false);
-
-  // holds the project object returned by backend for the last created project
   const [successProject, setSuccessProject] = useState<ProjectItem | null>(null);
   const [showSuccessBanner, setShowSuccessBanner] = useState(false);
 
@@ -31,7 +29,6 @@ export default function ProjectsPage() {
       setProjects(r.data || []);
     } catch (err) {
       console.error("Failed to load projects", err);
-      alert("Failed to load projects. Check console.");
     } finally {
       setLoading(false);
     }
@@ -41,7 +38,6 @@ export default function ProjectsPage() {
     fetchProjects();
   }, []);
 
-  // Aggregate funding by domain for the chart
   const domainFunding = useMemo(() => {
     const map = new Map<string, number>();
     projects.forEach((p) => {
@@ -51,137 +47,135 @@ export default function ProjectsPage() {
     return Array.from(map.entries()).map(([domain, total]) => ({ domain, total }));
   }, [projects]);
 
-  // Called by ProjectForm when a project is created successfully.
-  // ProjectForm must call `props.onCreated(createdProject)` after the POST returns.
   const handleProjectCreated = (created: ProjectItem) => {
-    // 1) Update UI immediately
     setProjects((prev) => [created, ...prev]);
-
-    // 2) Save to success state and show banner with two action buttons
     setSuccessProject(created);
     setShowSuccessBanner(true);
-    // do not redirect automatically (per your request)
   };
 
   const handleViewMatches = () => {
     if (!successProject) return;
     const projectId = (successProject as any).id ?? (successProject as any).project_id;
     if (projectId) {
-      router.push({
-        pathname: "/match",
-        query: { fromProject: String(projectId) },
-      });
+      router.push({ pathname: "/match", query: { fromProject: String(projectId) } });
     } else {
       router.push("/match");
     }
   };
 
-  const handleGoDashboard = () => {
-    // Default goes to founder dashboard. If your app stores user role,
-    // you can fetch /users/me and route dynamically instead.
-    router.push("/dashboard/founder");
-  };
-
   return (
     <Layout>
-      <div className="max-w-6xl mx-auto py-8 px-4">
-        <header className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-4xl font-extrabold">Projects</h1>
-            <p className="text-gray-600 mt-1">
-              Create projects, visualize funding by domain, and manage your pipeline.
-            </p>
-          </div>
-
-          <div className="text-sm text-gray-500">
-            {loading ? "Loading..." : `${projects.length} project${projects.length === 1 ? "" : "s"}`}
-          </div>
-        </header>
-
-        {/* Success banner (appears after create) */}
-        {showSuccessBanner && successProject && (
-          <div className="mb-6 bg-green-50 border border-green-100 rounded-lg p-4 flex items-center justify-between gap-4">
+      <div className="min-h-screen bg-slate-950 text-slate-200 selection:bg-cyan-500/30">
+        <div className="max-w-7xl mx-auto py-12 px-6 relative z-10">
+          
+          <header className="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-4">
             <div>
-              <div className="font-medium text-green-800">Project created successfully</div>
-              <div className="text-sm text-gray-700 mt-1">
-                <strong>{(successProject as any).title || (successProject as any).name || "Untitled"}</strong>
-                { (successProject as any).domain ? ` • ${ (successProject as any).domain }` : "" }
+              <h1 className="text-4xl font-black text-white tracking-tight">Your Portfolio</h1>
+              <p className="text-slate-400 mt-2 font-medium">
+                Create projects, visualize funding by domain, and manage your pipeline.
+              </p>
+            </div>
+            <div className="px-4 py-2 bg-slate-900 border border-slate-800 rounded-full text-sm font-bold text-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.1)]">
+              {loading ? "Syncing..." : `${projects.length} Active Project${projects.length === 1 ? "" : "s"}`}
+            </div>
+          </header>
+
+          {/* Success banner */}
+          {showSuccessBanner && successProject && (
+            <div className="mb-8 glass bg-emerald-900/20 border border-emerald-500/30 rounded-2xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-[0_0_30px_rgba(16,185,129,0.1)] backdrop-blur-md">
+              <div>
+                <div className="font-black text-emerald-400 uppercase tracking-wider text-xs">Project Deployed Successfully</div>
+                <div className="text-white mt-1 text-lg font-bold">
+                  {(successProject as any).title || (successProject as any).name || "Untitled"}
+                  { (successProject as any).domain ? <span className="text-slate-400 font-medium text-sm ml-2">• {(successProject as any).domain}</span> : "" }
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+                <button
+                  onClick={handleViewMatches}
+                  className="flex-1 sm:flex-none px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm rounded-xl transition-all shadow-[0_0_15px_rgba(16,185,129,0.4)]"
+                >
+                  Find Matches
+                </button>
+                <button
+                  onClick={() => router.push("/dashboard/founder")}
+                  className="flex-1 sm:flex-none px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-bold text-sm rounded-xl border border-slate-700 transition-all"
+                >
+                  Dashboard
+                </button>
+                <button
+                  onClick={() => { setShowSuccessBanner(false); setSuccessProject(null); }}
+                  className="px-3 py-2 text-sm font-bold text-slate-500 hover:text-slate-300 transition-colors"
+                >
+                  Dismiss
+                </button>
               </div>
             </div>
+          )}
 
-            <div className="flex items-center gap-3">
-              <button
-                onClick={handleViewMatches}
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                aria-label="View matches for this project"
-              >
-                View Matches
-              </button>
-
-              <button
-                onClick={handleGoDashboard}
-                className="px-4 py-2 border rounded hover:bg-gray-50"
-                aria-label="Go to dashboard"
-              >
-                Go to Dashboard
-              </button>
-
-              <button
-                onClick={() => { setShowSuccessBanner(false); setSuccessProject(null); }}
-                className="px-3 py-2 text-sm text-gray-500 hover:text-gray-700"
-                aria-label="Dismiss"
-              >
-                Dismiss
-              </button>
-            </div>
-          </div>
-        )}
-
-        <div className="grid gap-6 lg:grid-cols-3">
-          {/* Left column: create form */}
-          <aside className="lg:col-span-1">
-            <ProjectForm
-              onCreated={(p: ProjectItem) => handleProjectCreated(p)}
-            />
-          </aside>
-
-          {/* Right column: chart + list */}
-          <main className="lg:col-span-2 space-y-6">
-            <section className="bg-white p-6 rounded-2xl shadow">
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold mb-0">Funding by domain</h3>
-                <div className="text-sm text-gray-500">{domainFunding.length} domain{domainFunding.length === 1 ? "" : "s"}</div>
+          <div className="grid gap-8 lg:grid-cols-3">
+            {/* Left column: create form */}
+            <aside className="lg:col-span-1">
+              <div className="sticky top-8">
+                <ProjectForm onCreated={(p: ProjectItem) => handleProjectCreated(p)} />
               </div>
+            </aside>
 
-              <div style={{ height: 220 }} className="mt-4">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={domainFunding}>
-                    <XAxis dataKey="domain" />
-                    <YAxis />
-                    <Tooltip />
-                    <Bar dataKey="total" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </section>
-
-            <section>
-              <div className="grid gap-4 md:grid-cols-2">
-                {projects.length === 0 ? (
-                  <div className="bg-white p-6 rounded-2xl shadow text-gray-500">
-                    No projects yet. Create one using the form on the left.
+            {/* Right column: chart + list */}
+            <main className="lg:col-span-2 space-y-8">
+              <section className="glass bg-slate-900/40 p-8 rounded-3xl border border-white/5 shadow-2xl backdrop-blur-md">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="font-bold text-white uppercase tracking-wider text-sm">Funding Ask by Domain</h3>
+                  <div className="text-xs font-bold text-cyan-400 px-3 py-1 bg-cyan-900/30 rounded-full border border-cyan-800/50">
+                    {domainFunding.length} Sector{domainFunding.length === 1 ? "" : "s"}
                   </div>
-                ) : (
-                  projects.map((p) => (
-                    <ProjectCard key={p.id ?? p.title} project={p} />
-                  ))
-                )}
-              </div>
-            </section>
-          </main>
+                </div>
+
+                <div style={{ height: 260 }} className="w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={domainFunding} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                      <XAxis dataKey="domain" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
+                      <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `$${val/1000}k`} />
+                      <Tooltip 
+                        contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #334155', borderRadius: '12px', color: '#fff' }}
+                        cursor={{ fill: '#1e293b' }}
+                        formatter={(value: number) => [`$${value.toLocaleString()}`, "Funding Goal"]}
+                      />
+                      <Bar dataKey="total" radius={[6, 6, 0, 0]}>
+                        {domainFunding.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={index % 2 === 0 ? "#06b6d4" : "#8b5cf6"} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </section>
+
+              <section>
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="font-bold text-white uppercase tracking-wider text-sm">Active Projects</h3>
+                </div>
+                <div className="grid gap-6 md:grid-cols-2">
+                  {projects.length === 0 ? (
+                    <div className="md:col-span-2 glass bg-slate-900/40 p-12 rounded-3xl border border-white/5 border-dashed flex flex-col items-center justify-center text-center">
+                      <div className="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center mb-4 border border-slate-700">
+                        <span className="text-2xl">🚀</span>
+                      </div>
+                      <h4 className="text-white font-bold text-lg">No projects deployed</h4>
+                      <p className="text-slate-400 mt-2 max-w-sm">Use the console on the left to initialize your first project and start matching with investors.</p>
+                    </div>
+                  ) : (
+                    projects.map((p) => (
+                      <ProjectCard key={p.id ?? p.title} project={p} />
+                    ))
+                  )}
+                </div>
+              </section>
+            </main>
+          </div>
         </div>
       </div>
     </Layout>
   );
 }
-// pages/api/match/index.tsx

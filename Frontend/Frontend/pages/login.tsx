@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Lock, Mail, ArrowRight, Loader2, Network } from "lucide-react";
 import Layout from "../components/Layout";
 import { auth, setAuthToken } from "../lib/api";
+import { useAuth } from "../context/AuthContext"; // <-- IMPORT THE HOOK
 
 type ModalProps = {
   open: boolean;
@@ -25,7 +26,7 @@ function Modal({ open, title, onClose, children }: ModalProps) {
           />
           <motion.div 
             initial={{ scale: 0.95, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0, y: 20 }}
-            className="relative max-w-md w-full glass bg-slate-900/90 rounded-2xl shadow-[0_0_50px_rgba(6,182,212,0.15)] border border-white/10 p-8 mx-4 overflow-hidden"
+            className="relative max-w-md w-full glass bg-slate-900/90 rounded-2xl shadow-[0_0_50px_rgba(6,182,212,0.15)] border border-white/10 p-8 mx-4 overflow-hidden z-10"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-500 to-purple-500"></div>
@@ -40,6 +41,8 @@ function Modal({ open, title, onClose, children }: ModalProps) {
 
 export default function LoginPage() {
   const router = useRouter();
+  const { login } = useAuth(); // <-- EXTRACT THE LOGIN FUNCTION
+  
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -64,19 +67,25 @@ export default function LoginPage() {
     try {
       const res = await auth.login({ email, password });
       const token = res.data?.access_token || res.data?.accessToken || res.data?.token || res.data?.session?.access_token || null;
-      if (token) setAuthToken(token);
-
-      let role: string | null = res.data?.role || null;
-      if (!role) {
-        try {
-          const me = await auth.me();
-          role = me?.data?.role || (me?.data?.is_investor ? "investor" : "founder") || null;
-        } catch (e) {
-          role = null;
-        }
+      
+      // We will grab the user data immediately to update the Global State
+      let userData = { id: 0, email: email, role: res.data?.role || null };
+      
+      try {
+        setAuthToken(token); // Set it temporarily to fetch 'me'
+        const me = await auth.me();
+        userData = me?.data;
+        userData.role = userData.role || (me?.data?.is_investor ? "investor" : "founder") || null;
+      } catch (e) {
+        console.warn("Could not fetch user profile details during login.");
       }
 
-      setDetectedRole(role);
+      if (token) {
+        // --- TRIGGER THE GLOBAL LOGIN STATE ---
+        login(token, userData);
+      }
+
+      setDetectedRole(userData.role);
       setModalOpen(true);
     } catch (err: any) {
       console.error("LOGIN FAILED:", err);
@@ -90,7 +99,6 @@ export default function LoginPage() {
     <Layout>
       <div className="min-h-[80vh] flex items-center justify-center px-4 py-12 relative z-10">
         
-        {/* Background Ambient Orbs */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-3xl h-[500px] bg-cyan-600/10 rounded-full blur-[120px] pointer-events-none -z-10"></div>
 
         <motion.div 
@@ -167,7 +175,6 @@ export default function LoginPage() {
           </div>
         </motion.div>
 
-        {/* Success Modal */}
         <Modal open={modalOpen} title="Authentication Successful" onClose={() => setModalOpen(false)}>
           <p className="text-slate-300 mb-6 text-sm leading-relaxed">
             Secure connection established. Would you like to configure your matchmaking profile or proceed directly to your data dashboard?

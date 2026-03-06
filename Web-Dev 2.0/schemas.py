@@ -61,6 +61,8 @@ class ProjectBase(BaseModel):
     description: str
     domain: str
     funding_goal: int
+    stage: Optional[str] = None
+    tags: Optional[List[str]] = []
 
 class ProjectCreate(ProjectBase):
     pass

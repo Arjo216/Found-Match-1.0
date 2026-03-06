@@ -1,7 +1,7 @@
 // components/match/MatchCard.tsx
-import React from "react";
+import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MessageSquare, Bookmark, Eye, Sparkles, CheckCircle2 } from "lucide-react";
+import { MessageSquare, Bookmark, Eye, CheckCircle2, UserPlus, X, Loader2 } from "lucide-react";
 
 type Profile = {
   id: number | string;
@@ -23,6 +23,7 @@ type Props = {
   onMessage?: () => void;
   onSave?: () => void;
   fetchPrediction?: () => Promise<any>;
+  onInteract?: (id: string | number, isConnect: boolean) => Promise<void>;
 };
 
 function ScoreRing({ value }: { value?: number | null }) {
@@ -57,19 +58,44 @@ function ScoreRing({ value }: { value?: number | null }) {
   );
 }
 
-export default function MatchCard({ profile, onView, onMessage, onSave, fetchPrediction }: Props) {
+export default function MatchCard({ profile, onView, onMessage, onSave, onInteract }: Props) {
   const score = profile.match_score ?? profile.score ?? null;
-  const rec = profile.recommendation ?? null;
   const isPerfectMatch = score && score >= 90;
+  
+  // Local state to manage the button transition seamlessly
+  // Local state to manage the button transition seamlessly
+  const [connectState, setConnectState] = useState<"idle" | "loading" | "connected">("idle");
+
+  const handleConnect = async () => {
+    if (!onInteract) return;
+    setConnectState("loading");
+    try {
+      // FIX: Look for profile_id first, fallback to id
+      const targetId = profile.profile_id || profile.id; 
+      await onInteract(targetId, true);
+      setConnectState("connected");
+    } catch {
+      setConnectState("idle");
+    }
+  };
+
+  const handleSkip = () => {
+    if (onInteract) {
+      // FIX: Look for profile_id first, fallback to id
+      const targetId = profile.profile_id || profile.id; 
+      onInteract(targetId, false);
+    }
+  };
 
   return (
     <motion.article 
+      layout
       whileHover={{ y: -5 }}
+      exit={{ opacity: 0, scale: 0.95 }}
       className={`glass rounded-2xl p-6 flex flex-col h-full border transition-all duration-300 relative overflow-hidden group shadow-2xl ${
         isPerfectMatch ? "border-emerald-500/40 bg-slate-900/60" : "border-white/5 bg-slate-900/40"
       }`}
     >
-      {/* PERFECT MATCH BADGE */}
       <AnimatePresence>
         {isPerfectMatch && (
           <motion.div 
@@ -104,16 +130,47 @@ export default function MatchCard({ profile, onView, onMessage, onSave, fetchPre
         {profile.snippet || "No additional details provided."}
       </p>
 
-      <div className="mt-6 flex gap-3">
-        <button onClick={onView} className="flex-1 flex justify-center items-center gap-2 px-4 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white text-sm font-bold rounded-lg transition-colors">
-          <Eye className="w-4 h-4" /> View Profile
-        </button>
-        <button onClick={onMessage} className="p-2.5 border border-white/10 bg-slate-800/50 rounded-lg text-slate-300 hover:text-white transition-colors">
-          <MessageSquare className="w-4 h-4" />
-        </button>
-        <button onClick={onSave} className="p-2.5 border border-white/10 bg-slate-800/50 rounded-lg text-slate-300 hover:text-white transition-colors">
-          <Bookmark className="w-4 h-4" />
-        </button>
+      {/* ACTION BUTTONS (LinkedIn / Professional Style) */}
+      <div className="mt-6 flex flex-col gap-2.5">
+        
+        {/* Primary Networking Row */}
+        <div className="flex gap-2.5">
+          {connectState === "connected" ? (
+            <button disabled className="flex-1 flex justify-center items-center gap-2 px-4 py-2.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm font-bold rounded-lg cursor-default transition-all">
+              <CheckCircle2 className="w-4 h-4" /> Request Sent
+            </button>
+          ) : (
+            <button 
+              onClick={handleConnect} 
+              disabled={connectState === "loading"}
+              className="flex-1 flex justify-center items-center gap-2 px-4 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white text-sm font-bold rounded-lg transition-all shadow-md shadow-cyan-900/20 disabled:opacity-70"
+            >
+              {connectState === "loading" ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}
+              Connect
+            </button>
+          )}
+
+          <button 
+            onClick={handleSkip} 
+            title="Skip Profile"
+            className="px-4 py-2.5 bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-slate-200 border border-white/5 rounded-lg transition-colors group"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Secondary Analytical Row */}
+        <div className="flex gap-2.5">
+          <button onClick={onView} className="flex-1 flex justify-center items-center gap-2 px-4 py-2 bg-slate-800/40 hover:bg-slate-800 border border-white/5 text-slate-300 hover:text-white text-sm font-semibold rounded-lg transition-colors">
+            <Eye className="w-4 h-4" /> View Profile
+          </button>
+          <button onClick={onMessage} title="Direct Message" className="p-2 border border-white/5 bg-slate-800/40 rounded-lg text-slate-400 hover:text-white transition-colors">
+            <MessageSquare className="w-4 h-4" />
+          </button>
+          <button onClick={onSave} title="Save to Shortlist" className="p-2 border border-white/5 bg-slate-800/40 rounded-lg text-slate-400 hover:text-white transition-colors">
+            <Bookmark className="w-4 h-4" />
+          </button>
+        </div>
       </div>
     </motion.article>
   );

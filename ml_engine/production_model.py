@@ -52,39 +52,52 @@ class FoundMatchProductionAI:
 
     def predict_match_score(self, investor_text, startup_text, investor_id, startup_id):
         """
-        Calculates a hybrid score (NLP + Graph).
+        Calculates a presentation-ready hybrid score (NLP + Graph + Normalization).
         """
         # 1. NLP Score (Semantic Similarity)
-        # We don't need gradients for inference
         with torch.no_grad():
             emb1 = self.nlp_model.encode(investor_text, convert_to_tensor=True)
             emb2 = self.nlp_model.encode(startup_text, convert_to_tensor=True)
-            semantic_score = torch.nn.functional.cosine_similarity(emb1, emb2, dim=0).item()
             
-            # 2. Graph Score (Latent Connection)
-            # For inference, we use the learned embeddings directly.
-            # We don't necessarily need the edge_index for a single lookup if we use the stored weights.
-            # However, LightGCN implies smoothing over the graph. 
-            # For simplicity and speed in production, we often look up the raw embedding 
-            # or use a cached "final" embedding matrix.
+            # Get raw cosine similarity and bound it strictly between 0 and 1
+            raw_semantic = torch.nn.functional.cosine_similarity(emb1, emb2, dim=0).item()
+            semantic_score = max(0.0, raw_semantic)
             
-            # Let's use the embeddings directly from the table for fast lookup
-            # (In a highly dynamic graph, you'd re-run the convolution, but that's heavy for API)
+            # 2. Graph Score (Latent Collaborative Connection)
             all_emb = self.graph_model.embedding.weight
-            
-            # Safe ID lookup
             safe_inv_id = investor_id if investor_id < self.num_users else 0
             safe_startup_id = startup_id if startup_id < self.num_items else 0
             
-            # Startup index in graph = num_users + startup_ID
             u_emb = all_emb[safe_inv_id]
             i_emb = all_emb[self.num_users + safe_startup_id]
             
-            # Dot product + Sigmoid
             graph_score = torch.sigmoid(torch.sum(u_emb * i_emb)).item()
             
-            # 3. Hybrid Weighting (70% Content, 30% Graph)
-            # You can tweak this balance. Content is safer for new startups.
-            final_score = (0.7 * semantic_score) + (0.3 * graph_score)
+            # 3. Base Hybrid Weighting (70% Content, 30% Graph)
+            base_score = (0.7 * semantic_score) + (0.3 * graph_score)
+
+            # --- THE MAGIC: NORMALIZATION & HEURISTICS ---
             
-            return round(final_score * 100, 2)
+            # A. Keyword Overlap Booster (Simulating your "Hard Parameter Match")
+            investor_lower = investor_text.lower()
+            startup_lower = startup_text.lower()
+            key_sectors = ["ai", "fintech", "saas", "healthtech", "cybersecurity", "web3", "b2b", "ml"]
+            
+            shared_keywords = sum(1 for kw in key_sectors if kw in investor_lower and kw in startup_lower)
+            keyword_boost = min(0.15, shared_keywords * 0.05) # Add 5% per matched keyword, up to 15%
+            
+            # B. The Power Curve (Stretches clumped scores into the 80s and 90s)
+            # A raw base score of 0.60 becomes ~0.77.
+            curved_score = base_score ** 0.5 
+            
+            # C. Combine and Cap
+            final_score = curved_score + keyword_boost
+            
+            # Cap at 0.98 so it looks realistic (nobody is a mathematically perfect 100% match)
+            final_score = min(0.98, final_score)
+            
+            # If the base score is truly terrible (< 0.20), let it stay terrible.
+            if base_score < 0.20:
+                final_score = base_score
+            
+            return round(final_score * 100, 1)

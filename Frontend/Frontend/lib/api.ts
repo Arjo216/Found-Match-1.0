@@ -1,9 +1,9 @@
-// Frontend/Frontend/lib/api.ts
+// lib/api.ts
 import axios, { AxiosInstance } from "axios";
 
 const USE_COOKIES = (process.env.NEXT_PUBLIC_API_USE_COOKIES || "false").toLowerCase() === "true";
-const USE_MOCKS = (process.env.NEXT_PUBLIC_USE_MOCKS || "false") === "true";
-const API_BASE = USE_MOCKS ? "" : (process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000");
+// Force the default API URL to ensure it never routes to an empty string during dev
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
 
 export const api: AxiosInstance = axios.create({
   baseURL: API_BASE,
@@ -13,7 +13,7 @@ export const api: AxiosInstance = axios.create({
   withCredentials: USE_COOKIES,
 });
 
-// Attach Authorization header from localStorage token (client-side only) if not using cookies
+// Interceptor: Injects the token into every single outgoing request
 api.interceptors.request.use(
   (config) => {
     try {
@@ -24,15 +24,12 @@ api.interceptors.request.use(
         }
       }
     } catch (e) {
-      // ignore
+      // Safely ignore local storage errors in SSR
     }
     return config;
   },
   (err) => Promise.reject(err)
 );
-
-
-
 
 export const setAuthToken = (token: string) => {
   if (typeof window !== "undefined" && !USE_COOKIES) {
@@ -46,22 +43,16 @@ export const clearAuthToken = () => {
   }
 };
 
-// helpers that call backend
 export const auth = {
-  // NOTE: OAuth2PasswordRequestForm expects 'username' + 'password' as form-urlencoded
   login: (data: { email: string; password: string }) =>
     api.post(
       "/auth/login",
-      // form body required by OAuth2PasswordRequestForm
       new URLSearchParams({ username: data.email, password: data.password }).toString(),
       { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
     ),
 
-  // signup keeps JSON (Pydantic)
   signup: (data: { name?: string; email: string; password: string; role?: string }) =>
     api.post("/auth/signup", data),
 
-  // try /auth/me by default — change if your backend exposes /users/me
   me: () => api.get("/auth/me"),
 };
-
