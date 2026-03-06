@@ -36,7 +36,7 @@ coverage/
 # Typically, we don't commit large model weights or huge datasets.
 # If your .pth file is >100MB, GitHub will reject the push unless you use Git LFS.
 # Uncomment the lines below if your model file gets too big:
- data/*.pth
+data/*.pth
 #data/foundmatch_graph.pth
 
 # --- System Files ---
