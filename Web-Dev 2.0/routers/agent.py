@@ -165,24 +165,23 @@ async def generate_chat_suggestions(
     req: ChatAssistRequest,
     db: Session = Depends(get_db)
 ):
-    # --- SAFE RESOLVER ---
+    # --- BULLETPROOF RESOLVER ---
     def get_profile_safe(identifier):
         try:
-            # If it's a UUID, search by user_id
-            uuid.UUID(str(identifier))
-            return db.query(models.Profile).filter(models.Profile.user_id == str(identifier)).first()
+            valid_uuid = uuid.UUID(str(identifier))
+            return db.query(models.Profile).filter(models.Profile.user_id == valid_uuid).first()
         except ValueError:
-            # If it's a number, search by id
-            return db.query(models.Profile).filter(models.Profile.id == int(identifier)).first()
+            try:
+                return db.query(models.Profile).filter(models.Profile.id == int(identifier)).first()
+            except Exception:
+                return None
+        except Exception as e:
+            db.rollback() # Prevents InFailedSqlTransaction poisoning
+            return None
 
-    # 1. Fetch BOTH profiles safely without crashing PostgreSQL
     sender = get_profile_safe(req.sender_id)
     receiver = get_profile_safe(req.receiver_id)
 
-    #if not sender or not receiver:
-        #return {"suggestions": ["Could you elaborate on your traction?", "I'd love to schedule a quick call.", "Can you share your pitch deck?"]}
-
-    # 2. Construct the context
     system_prompt = f"""
     You are an elite M&A advisor and Venture Capital ghostwriter. 
     You are writing on behalf of the SENDER to the RECEIVER.
@@ -213,16 +212,29 @@ async def generate_chat_suggestions(
             max_tokens=300
         )
         
-        import json
+        # --- AGGRESSIVE JSON CLEANING ---
         raw_reply = response.choices[0].message.content.strip()
         
-        if raw_reply.startswith("```json"):
-            raw_reply = raw_reply[7:-3]
-        elif raw_reply.startswith("```"):
-            raw_reply = raw_reply[3:-3]
+        # Strip out markdown code blocks if the AI ignored instructions
+        if "```json" in raw_reply:
+            raw_reply = raw_reply.split("```json")[1].split("```")[0].strip()
+        elif "```" in raw_reply:
+            raw_reply = raw_reply.split("```")[1].strip()
             
-        suggestions = json.loads(raw_reply)
-        return {"suggestions": suggestions}
+        parsed_data = json.loads(raw_reply)
+        
+        # Force extraction into a flat list
+        if isinstance(parsed_data, dict):
+            suggestions_list = parsed_data.get("suggestions", list(parsed_data.values())[0])
+        elif isinstance(parsed_data, list):
+            suggestions_list = parsed_data
+        else:
+            raise ValueError("AI returned unrecognizable format.")
+
+        # Ensure we return strictly strings
+        final_suggestions = [str(s) for s in suggestions_list][:3]
+        
+        return {"suggestions": final_suggestions}
         
     except Exception as e:
         print(f"[Chat Assist Error] {e}")
@@ -232,6 +244,7 @@ async def generate_chat_suggestions(
             "Let's get 15 minutes on the calendar this week to dive deeper."
         ]}
 
+
 class CoPilotAssistRequest(BaseModel):
     profile_id: int
 
@@ -240,33 +253,25 @@ async def generate_copilot_suggestions(
     req: CoPilotAssistRequest,
     db: Session = Depends(get_db)
 ):
-    """
-    Analyzes the user's profile and generates 3 strategic, humane questions 
-    the user should ask their Executive Co-Pilot.
-    """
-    # 1. Fetch user context
-    profile = db.query(models.Profile).filter(models.Profile.id == req.profile_id).first()
+    try:
+        profile = db.query(models.Profile).filter(models.Profile.id == req.profile_id).first()
+    except Exception:
+        db.rollback() # Prevents DB poisoning
+        profile = None
 
     user_role = profile.role if profile and profile.role else "Professional"
     user_domain = profile.interests if profile and profile.interests else "General Business"
 
-    # 2. Instruct the AI on how to write the suggestions
     system_prompt = f"""
     You are an elite Venture Capital advisor. Your client is a {user_role} in the {user_domain} sector.
     They are looking at a blank chat box and need to know what to ask you.
     
     Generate EXACTLY 3 highly strategic, humane questions this client should ask you right now to optimize their success on this platform.
-    - Question 1: Focused on market analysis or thesis validation.
-    - Question 2: Focused on tactical growth, networking, or deal flow.
-    - Question 3: Focused on risk mitigation or operational blind spots.
-    
-    Format the questions from the FIRST-PERSON perspective of the user (e.g., "What metrics should I focus on...").
     Return ONLY a valid JSON array of 3 strings. Do not include markdown formatting like ```json.
     """
 
     try:
         from utils.agent import client 
-        
         response = await client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[{"role": "system", "content": system_prompt}],
@@ -274,15 +279,25 @@ async def generate_copilot_suggestions(
             max_tokens=250
         )
         
-        # 3. Safely parse the JSON response
+        # --- AGGRESSIVE JSON CLEANING ---
         raw_reply = response.choices[0].message.content.strip()
-        if raw_reply.startswith("```json"):
-            raw_reply = raw_reply[7:-3]
-        elif raw_reply.startswith("```"):
-            raw_reply = raw_reply[3:-3]
+        
+        if "```json" in raw_reply:
+            raw_reply = raw_reply.split("```json")[1].split("```")[0].strip()
+        elif "```" in raw_reply:
+            raw_reply = raw_reply.split("```")[1].strip()
             
-        suggestions = json.loads(raw_reply)
-        return {"suggestions": suggestions}
+        parsed_data = json.loads(raw_reply)
+        
+        if isinstance(parsed_data, dict):
+            suggestions_list = parsed_data.get("suggestions", list(parsed_data.values())[0])
+        elif isinstance(parsed_data, list):
+            suggestions_list = parsed_data
+        else:
+            raise ValueError("AI returned unrecognizable format.")
+
+        final_suggestions = [str(s) for s in suggestions_list][:3]
+        return {"suggestions": final_suggestions}
         
     except Exception as e:
         print(f"[Co-Pilot Assist Error] {e}")

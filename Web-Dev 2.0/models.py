@@ -51,6 +51,12 @@ class User(Base):
     # 🛡️ NEW: The E2EE Public Key storage
     public_key = Column(Text, nullable=True)
 
+    # 🛡️ NEW: KYC & Identity Verification Fields
+    kyc_verified = Column(Boolean, default=False, nullable=False)
+    kyc_document_type = Column(String(50), nullable=True) # 'PAN' or 'AADHAAR'
+    # We store a masked version (e.g., 'XXXX-XXXX-2222') to avoid holding raw sensitive data
+    kyc_document_mask = Column(String(100), nullable=True) # Masked for security
+
     profile = relationship("Profile", back_populates="user", uselist=False, cascade="all, delete")
     projects = relationship("Project", back_populates="user", cascade="all, delete")
     matches_as_entrepreneur = relationship(
@@ -63,9 +69,6 @@ class User(Base):
     )
     # Added relationship for swipes
     swipes = relationship("MatchSwipe", back_populates="user", cascade="all, delete")
-    #kyc_verified = Column(Boolean, default=False, nullable=False)
-    #kyc_document_type = Column(String(50), nullable=True) # 'PAN' or 'AADHAAR'
-    #kyc_document_id = Column(String(100), nullable=True) # Masked for security
 
 class Profile(Base):
     __tablename__ = "profiles"

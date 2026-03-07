@@ -53,7 +53,7 @@ export default function NotificationBell() {
         )}
       </button>
 
-      {/* The Glassmorphism Dropdown */}
+      {/* The Solid Dropdown */}
       <AnimatePresence>
         {isOpen && (
           <motion.div 
@@ -61,13 +61,14 @@ export default function NotificationBell() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className="absolute right-0 mt-3 w-80 md:w-96 bg-slate-900/90 backdrop-blur-xl border border-slate-700/50 rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.8)] overflow-hidden z-[99999]"
+            // 🛡️ FIX: Changed from bg-slate-900/90 to solid bg-slate-950 to prevent Kanban text bleeding!
+            className="absolute right-0 mt-3 w-80 md:w-96 bg-slate-950 border border-slate-700 rounded-2xl shadow-[0_30px_80px_rgba(0,0,0,0.95)] overflow-hidden z-[99999]"
           >
-            <div className="p-4 border-b border-white/5 bg-slate-950/50 flex items-center justify-between">
+            <div className="p-4 border-b border-white/10 bg-slate-900 flex items-center justify-between">
               <h3 className="font-bold text-white flex items-center gap-2">
                 <Lock className="w-4 h-4 text-emerald-400" /> Secure Activity
               </h3>
-              <span className="text-xs font-bold text-slate-500 bg-slate-900 px-2 py-1 rounded-md border border-slate-800">
+              <span className="text-xs font-bold text-slate-400 bg-slate-950 px-2 py-1 rounded-md border border-slate-800">
                 {notifications.length} New
               </span>
             </div>
@@ -80,7 +81,7 @@ export default function NotificationBell() {
                 </div>
               ) : (
                 notifications.map((notif) => (
-                  <div key={notif.id} className="p-4 border-b border-white/5 hover:bg-slate-800/50 transition-colors flex gap-4 items-start group">
+                  <div key={notif.id} className="p-4 border-b border-white/5 hover:bg-slate-900 transition-colors flex gap-4 items-start group">
                     <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border ${notif.type === 'vault_asset' ? 'bg-cyan-900/30 border-cyan-800 text-cyan-400' : 'bg-purple-900/30 border-purple-800 text-purple-400'}`}>
                       {notif.type === 'vault_asset' ? <FileText className="w-5 h-5" /> : <Lock className="w-5 h-5" />}
                     </div>
@@ -105,8 +106,8 @@ export default function NotificationBell() {
               )}
             </div>
             
-            <div className="p-3 bg-slate-950/80 border-t border-white/5 text-center">
-              <span className="text-[10px] font-bold text-slate-600 uppercase tracking-widest flex items-center justify-center gap-1.5">
+            <div className="p-3 bg-slate-900 border-t border-white/5 text-center">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center justify-center gap-1.5">
                 <Lock className="w-3 h-3" /> End-to-End Encrypted Transit
               </span>
             </div>

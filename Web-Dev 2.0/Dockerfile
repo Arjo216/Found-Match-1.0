@@ -4,22 +4,30 @@ FROM python:3.11-slim AS builder
 # 1. System dependencies (for building Python packages)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
+    libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
 # 2. Install Python Dependencies
-# We copy requirements first to use Docker caching
-COPY ["Web-Dev 2.0/requirements.txt", "."] 
+# 🛡️ FIX: Copy BOTH requirement files to use Docker caching
+COPY ["Web-Dev 2.0/requirements.txt", "./req-backend.txt"] 
+COPY ["ml_engine/requirements-ml.txt", "./req-ml.txt"]
 
 RUN python -m venv /opt/venv \
     && /opt/venv/bin/pip install --upgrade pip \
     # Install Torch CPU version specifically to keep image size small
-    && /opt/venv/bin/pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu \
-    && /opt/venv/bin/pip install --no-cache-dir -r requirements.txt
+    && /opt/venv/bin/pip install --no-cache-dir torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu \
+    # 🛡️ FIX: Install both Backend AND ML dependencies
+    && /opt/venv/bin/pip install --no-cache-dir -r req-backend.txt -r req-ml.txt
 
 # --- Stage 2: Runtime (Lightweight & Secure) ---
 FROM python:3.11-slim
+
+# Install the minimal runtime database library so psycopg2 doesn't crash
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpq5 \
+    && rm -rf /var/lib/apt/lists/*
 
 # 3. Create non-root user for security
 RUN useradd --create-home appuser
@@ -31,8 +39,6 @@ ENV PATH="/opt/venv/bin:$PATH"
 
 # 5. MONOREPO SETUP (The Critical Part)
 # We copy all three necessary folders from the project root
-# NOTE: This works because docker-compose builds from the Root Context
-# CRITICAL FIX: Use quotes because your folder has spaces
 COPY --chown=appuser:appuser ["Web-Dev 2.0/", "/app/backend/"]
 COPY --chown=appuser:appuser ml_engine/ /app/ml_engine/
 COPY --chown=appuser:appuser data/ /app/data/

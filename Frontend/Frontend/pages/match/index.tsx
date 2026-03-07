@@ -7,7 +7,8 @@ import MatchCard from "../../components/match/MatchCard";
 import FilterBar from "../../components/match/FilterBar";
 import DetailDrawer from "../../components/match/DetailDrawer";
 import ChatWindow from "../../components/ChatWindow"; 
-import { useAuth } from "../../context/AuthContext"; // <-- 1. IMPORT REAL AUTH
+import KYCModal from "../../components/KYCModal"; // 🛡️ IMPORT KYC MODAL
+import { useAuth } from "../../context/AuthContext";
 
 type ProfileItem = {
   id: string | number;
@@ -31,20 +32,36 @@ export default function MatchPage() {
   const [filters, setFilters] = useState<Record<string, any>>({});
   const [selected, setSelected] = useState<ProfileItem | null>(null);
 
-  // --- CHAT STATE ---
+  // --- KYC & CHAT STATE ---
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [showKycModal, setShowKycModal] = useState(false);
+  const [isKycVerified, setIsKycVerified] = useState(false);
+  
   const [activeChatUser, setActiveChatUser] = useState<ProfileItem | null>(null);
   const [chatPrefill, setChatPrefill] = useState<string>(""); 
   
-  // <-- 2. GET THE REAL LOGGED-IN USER ID DYNAMICALLY
   const { user } = useAuth();
   const currentUserId = user?.user_id || user?.id || "";
+
+  // 🛡️ Load KYC Status on Mount
+  useEffect(() => {
+    let mounted = true;
+    async function checkKyc() {
+      try {
+        const kycRes = await api.get("/kyc/status");
+        if (mounted) setIsKycVerified(kycRes.data.kyc_verified);
+      } catch (e) {
+        console.warn("Could not fetch KYC status");
+      }
+    }
+    if (currentUserId) checkKyc();
+    return () => { mounted = false; };
+  }, [currentUserId]);
 
   const loadMatches = useCallback(async (params: Record<string, any> = {}) => {
     setLoading(true);
     setError(null);
     try {
-      // This hits your FastAPI backend and pulls the PyTorch/GNN scored profiles!
       const r = await api.get("/match/", { params });
       const data = r?.data;
       let list: ProfileItem[] = [];
@@ -126,13 +143,22 @@ export default function MatchPage() {
     [ensurePredictionFor]
   );
 
+  // 🛡️ SOFT GATE: Intercepts the Message Button
   const handleOpenChat = (profile: ProfileItem) => {
     if (!currentUserId) {
       alert("Please log in to initiate secure messaging.");
       return;
     }
+    
+    // Set the target user first
     setActiveChatUser(profile);
-    setIsChatOpen(true);
+
+    // Then check if KYC is cleared before opening the Deal Room
+    if (isKycVerified) {
+      setIsChatOpen(true);
+    } else {
+      setShowKycModal(true);
+    }
   };
 
   const handleInteraction = async (targetId: string | number, isConnect: boolean) => {
@@ -224,10 +250,24 @@ export default function MatchPage() {
           }}
         />
 
+        {/* 🛡️ KYC MODAL */}
+        <KYCModal 
+          isOpen={showKycModal} 
+          onClose={() => {
+            setShowKycModal(false);
+            setActiveChatUser(null); // Clear intent if they cancel
+          }} 
+          onSuccess={() => {
+            setShowKycModal(false);
+            setIsKycVerified(true);
+            setIsChatOpen(true); // Pop open the chat once verified!
+          }} 
+        />
+
         {/* --- SECURE CHAT WINDOW INJECTION --- */}
         {isChatOpen && activeChatUser && (
           <ChatWindow
-            currentUserId={String(currentUserId)} // <-- 3. INJECT THE REAL ID
+            currentUserId={String(currentUserId)}
             receiverId={String(activeChatUser.user_id || activeChatUser.id)}
             receiverName={activeChatUser.full_name || "Unknown User"}
             receiverRole={activeChatUser.domain || "Partner"}

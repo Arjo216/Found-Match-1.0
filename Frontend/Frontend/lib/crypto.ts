@@ -105,9 +105,17 @@ export async function encryptMessage(publicKey: CryptoKey, message: string): Pro
 
 export async function decryptMessage(privateKey: CryptoKey, encryptedBase64: string): Promise<string> {
   try {
-    // 1. Unpack the envelope
-    const payloadStr = window.atob(encryptedBase64);
-    const payload = JSON.parse(payloadStr);
+    // 1. Unpack the envelope securely
+    let payload;
+    try {
+      // If it's old plain text, atob or JSON.parse will fail immediately
+      const payloadStr = window.atob(encryptedBase64);
+      payload = JSON.parse(payloadStr);
+    } catch (parseErr) {
+      // FIX: Return the fallback string directly instead of throwing an error.
+      // This completely stops the Next.js Red Screen from appearing!
+      return "🔒 [Legacy Unencrypted Message]";
+    }
 
     const encryptedAesKeyBytes = base64ToBuffer(payload.k);
     const iv = base64ToBuffer(payload.i);

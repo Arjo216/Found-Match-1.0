@@ -1,9 +1,12 @@
 // pages/network.tsx
 import React, { useState, useEffect } from "react";
-import Layout from "../../components/Layout"; // <-- FIX: Added an extra ../
+import Layout from "../../components/Layout"; 
 import { motion } from "framer-motion";
-import { GripVertical, Target, Users, Search, FileText, CheckCircle2, MoreVertical, Briefcase } from "lucide-react";
-import { api } from "../../lib/api"; // <-- FIX: Added an extra ../
+import { GripVertical, Target, Users, Search, FileText, CheckCircle2, MoreVertical, Briefcase, MessageSquare } from "lucide-react";
+import { api } from "../../lib/api"; 
+import KYCModal from "../../components/KYCModal"; // 🛡️ ADDED KYC MODAL
+import ChatWindow from "../../components/ChatWindow"; // 🛡️ ADDED CHAT WINDOW
+import { useAuth } from "../../context/AuthContext";
 
 const STAGES = [
   { id: "sourced", label: "Sourced", icon: Target, color: "text-slate-400", border: "border-slate-700" },
@@ -13,7 +16,7 @@ const STAGES = [
   { id: "closed", label: "Closed", icon: CheckCircle2, color: "text-emerald-400", border: "border-emerald-500/30" }
 ];
 
-// Mock data to render the board immediately - replace with API call later
+// Mock data to render the board immediately
 const initialDeals = [
   { id: "1", name: "Asha Patel", entity: "Healthcare AI", stage: "sourced", match: 94 },
   { id: "2", name: "Apex Capital", entity: "Seed Fund", stage: "meeting", match: 88 },
@@ -24,11 +27,48 @@ export default function NetworkBoard() {
   const [deals, setDeals] = useState(initialDeals);
   const [draggedDealId, setDraggedDealId] = useState<string | null>(null);
 
-  // Native HTML5 Drag and Drop Handlers
+  // --- KYC & CHAT STATE ---
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [showKycModal, setShowKycModal] = useState(false);
+  const [isKycVerified, setIsKycVerified] = useState(false);
+  const [activeChatUser, setActiveChatUser] = useState<any | null>(null);
+  
+  const { user } = useAuth();
+  const currentUserId = user?.user_id || user?.id || "";
+
+  // 🛡️ Load KYC Status on Mount
+  useEffect(() => {
+    let mounted = true;
+    async function checkKyc() {
+      try {
+        const kycRes = await api.get("/kyc/status");
+        if (mounted) setIsKycVerified(kycRes.data.kyc_verified);
+      } catch (e) {
+        console.warn("Could not fetch KYC status");
+      }
+    }
+    if (currentUserId) checkKyc();
+    return () => { mounted = false; };
+  }, [currentUserId]);
+
+  // 🛡️ Trigger Soft Gate
+  const handleOpenChat = (deal: any) => {
+    if (!currentUserId) {
+      alert("Please log in to initiate secure messaging.");
+      return;
+    }
+    setActiveChatUser(deal);
+    if (isKycVerified) {
+      setIsChatOpen(true);
+    } else {
+      setShowKycModal(true);
+    }
+  };
+
+  // --- DRAG AND DROP HANDLERS ---
   const handleDragStart = (e: React.DragEvent, id: string) => {
     setDraggedDealId(id);
     e.dataTransfer.effectAllowed = "move";
-    // Slight delay to allow the ghost image to render before making the original transparent
     setTimeout(() => {
       const el = document.getElementById(`deal-${id}`);
       if (el) el.style.opacity = "0.4";
@@ -42,7 +82,7 @@ export default function NetworkBoard() {
   };
 
   const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault(); // Necessary to allow dropping
+    e.preventDefault(); 
     e.dataTransfer.dropEffect = "move";
   };
 
@@ -50,12 +90,10 @@ export default function NetworkBoard() {
     e.preventDefault();
     if (!draggedDealId) return;
 
-    // 1. Optimistic UI Update (Instant snap)
     setDeals(prev => prev.map(deal => 
       deal.id === draggedDealId ? { ...deal, stage: newStage } : deal
     ));
 
-    // 2. Background API Call to save state
     try {
       // await api.put(`/deals/${draggedDealId}/stage`, { stage: newStage });
       console.log(`Saved deal ${draggedDealId} to ${newStage}`);
@@ -68,7 +106,6 @@ export default function NetworkBoard() {
     <Layout>
       <div className="min-h-screen bg-slate-950 text-slate-200 pb-20">
         
-        {/* Header */}
         <div className="bg-slate-900/50 border-b border-white/5 pt-10 pb-8 px-6">
           <div className="max-w-[1600px] mx-auto flex flex-col md:flex-row justify-between items-end gap-6">
             <div>
@@ -83,7 +120,6 @@ export default function NetworkBoard() {
           </div>
         </div>
 
-        {/* Kanban Board Area */}
         <div className="max-w-[1600px] mx-auto px-6 py-8 relative z-10 overflow-x-auto">
           <div className="flex gap-6 min-w-max pb-8" style={{ height: 'calc(100vh - 250px)' }}>
             
@@ -94,7 +130,6 @@ export default function NetworkBoard() {
                 onDrop={(e) => handleDrop(e, stage.id)}
                 className={`flex flex-col w-80 shrink-0 bg-slate-900/40 rounded-3xl border border-white/5 shadow-2xl overflow-hidden transition-colors ${draggedDealId ? 'hover:bg-slate-900/80 hover:border-cyan-500/30' : ''}`}
               >
-                {/* Column Header */}
                 <div className={`p-4 border-b bg-slate-900/80 flex items-center justify-between ${stage.border}`}>
                   <div className="flex items-center gap-2">
                     <stage.icon className={`w-5 h-5 ${stage.color}`} />
@@ -105,11 +140,9 @@ export default function NetworkBoard() {
                   </span>
                 </div>
 
-                {/* Column Content (Drop Zone) */}
                 <div className="flex-1 p-4 space-y-4 overflow-y-auto custom-scrollbar">
                   {deals.filter(d => d.stage === stage.id).map((deal) => (
                     
-                    // The Draggable Card
                     <div 
                       id={`deal-${deal.id}`}
                       key={deal.id}
@@ -125,7 +158,13 @@ export default function NetworkBoard() {
                             {deal.match}% Match
                           </span>
                         </div>
-                        <button className="text-slate-600 hover:text-white"><MoreVertical className="w-4 h-4" /></button>
+                        {/* 🛡️ ADDED MESSAGE ICON TO TRIGGER SOFT GATE */}
+                        <div className="flex items-center gap-2">
+                          <button onClick={() => handleOpenChat(deal)} className="text-slate-500 hover:text-cyan-400 transition-colors" title="Open Deal Room">
+                            <MessageSquare className="w-4 h-4" />
+                          </button>
+                          <button className="text-slate-600 hover:text-white"><MoreVertical className="w-4 h-4" /></button>
+                        </div>
                       </div>
                       
                       <h4 className="font-bold text-white text-lg">{deal.name}</h4>
@@ -146,6 +185,35 @@ export default function NetworkBoard() {
 
           </div>
         </div>
+
+        {/* 🛡️ KYC MODAL */}
+        <KYCModal 
+          isOpen={showKycModal} 
+          onClose={() => {
+            setShowKycModal(false);
+            setActiveChatUser(null);
+          }} 
+          onSuccess={() => {
+            setShowKycModal(false);
+            setIsKycVerified(true);
+            setIsChatOpen(true); 
+          }} 
+        />
+
+        {/* --- SECURE CHAT WINDOW INJECTION --- */}
+        {isChatOpen && activeChatUser && (
+          <ChatWindow
+            currentUserId={String(currentUserId)}
+            receiverId={String(activeChatUser.id)}
+            receiverName={activeChatUser.name}
+            receiverRole={activeChatUser.entity}
+            onClose={() => {
+              setIsChatOpen(false);
+              setActiveChatUser(null);
+            }}
+          />
+        )}
+
       </div>
     </Layout>
   );

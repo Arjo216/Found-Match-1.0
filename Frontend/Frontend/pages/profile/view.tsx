@@ -5,6 +5,7 @@ import { useRouter } from "next/router";
 import Layout from "../../components/Layout";
 import { api } from "../../lib/api";
 import ChatWindow from "../../components/ChatWindow"; 
+import KYCModal from "../../components/KYCModal"; // 🛡️ NEW IMPORT
 import { useAuth } from "../../context/AuthContext"; 
 import { MessageSquare, Edit3, FolderKanban, Share2, Download, MapPin, Briefcase, Award, Zap, X } from "lucide-react";
 import {
@@ -45,7 +46,11 @@ export default function ProfileViewPage() {
   const [interestData, setInterestData] = useState<{ name: string; value: number }[]>([]);
   const COLORS = ["#4f46e5", "#06b6d4", "#f97316", "#10b981", "#ef4444", "#8b5cf6", "#f43f5e"];
 
+  // --- Modal States ---
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [showKycModal, setShowKycModal] = useState(false);
+  const [isKycVerified, setIsKycVerified] = useState(false);
+  
   const { user } = useAuth();
   const currentUserId = user?.user_id || user?.id || "";
 
@@ -67,6 +72,7 @@ export default function ProfileViewPage() {
     async function load() {
       setLoading(true);
       try {
+        // Load Profile Data
         const res = await api.get("/profile/me");
         const data: Profile = res?.data || {};
 
@@ -74,6 +80,7 @@ export default function ProfileViewPage() {
         const pie = interestsArr.map((name) => ({ name, value: 1 }));
         if (mounted) setInterestData(pie);
 
+        // Load Stats
         try {
           const stats = await api.get("/profile/stats");
           const series = stats?.data?.match_score_history || stats?.data?.history || [];
@@ -81,6 +88,14 @@ export default function ProfileViewPage() {
         } catch (statsErr) {
           const fallback = (data as any).match_score_history || (data as any).match_history || [];
           if (mounted) setMatchSeries(Array.isArray(fallback) ? fallback : []);
+        }
+
+        // 🛡️ Load KYC Status
+        try {
+          const kycRes = await api.get("/kyc/status");
+          if (mounted) setIsKycVerified(kycRes.data.kyc_verified);
+        } catch (kycErr) {
+          console.warn("Could not fetch KYC status");
         }
 
         if (mounted) setProfile(data);
@@ -107,6 +122,15 @@ export default function ProfileViewPage() {
       pathname: "/projects",
       query: profile?.id ? { fromProfile: String(profile.id) } : {},
     });
+  };
+
+  // 🛡️ Soft Gate Trigger
+  const handleOpenDealRoom = () => {
+    if (isKycVerified) {
+      setIsChatOpen(true);
+    } else {
+      setShowKycModal(true);
+    }
   };
 
   if (loading) {
@@ -147,15 +171,19 @@ export default function ProfileViewPage() {
               {/* Cover Banner */}
               <div className="h-32 w-full bg-gradient-to-r from-cyan-900/60 to-purple-900/60 relative">
                 <div className="absolute inset-0 opacity-20 mix-blend-overlay" style={{ backgroundImage: "url('https://www.transparenttextures.com/patterns/cubes.png')" }}></div>
-                <div className="absolute top-4 right-4 bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-lg z-10">
-                  <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span> Identity Verified
+                <div className={`absolute top-4 right-4 border text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-lg z-10 ${isKycVerified ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-400' : 'bg-amber-500/20 border-amber-500/30 text-amber-400'}`}>
+                  {isKycVerified ? (
+                    <><span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span> Identity Verified</>
+                  ) : (
+                    <><span className="w-1.5 h-1.5 bg-amber-500 rounded-full"></span> Unverified Participant</>
+                  )}
                 </div>
               </div>
 
               {/* Main Content Area */}
               <div className="px-6 sm:px-8 pb-8 relative flex flex-col sm:flex-row gap-6 sm:items-start">
                 
-                {/* Floating Avatar - Adjusted negative margin to prevent clipping */}
+                {/* Floating Avatar */}
                 <div className="w-28 h-28 bg-slate-950 border-4 border-slate-800 rounded-2xl flex items-center justify-center text-4xl font-black text-cyan-400 shadow-xl shrink-0 relative -mt-14 z-10">
                   {(profile.full_name || "U").split(" ").map((s) => s[0]).slice(0, 2).join("")}
                 </div>
@@ -190,7 +218,8 @@ export default function ProfileViewPage() {
 
                     {/* Primary Action Buttons */}
                     <div className="flex flex-wrap items-center gap-3 shrink-0 mt-2 xl:mt-0">
-                      <button onClick={() => setIsChatOpen(true)} className="flex items-center justify-center gap-2 px-5 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white text-sm font-bold rounded-xl shadow-lg transition-all group">
+                      {/* 🛡️ CHANGED ONCLICK TO TRIGGER SOFT GATE */}
+                      <button onClick={handleOpenDealRoom} className="flex items-center justify-center gap-2 px-5 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white text-sm font-bold rounded-xl shadow-lg transition-all group">
                         <MessageSquare className="w-4 h-4 group-hover:scale-110 transition-transform" /> Message
                       </button>
                       <button onClick={goToProjects} className="flex items-center justify-center gap-2 px-5 py-2.5 bg-purple-600 hover:bg-purple-500 text-white text-sm font-bold rounded-xl shadow-lg transition-all group">
@@ -326,7 +355,17 @@ export default function ProfileViewPage() {
 
           </div>
           
-          {/* --- SECURE CHAT WINDOW COMPONENT --- */}
+          {/* --- MODALS --- */}
+          <KYCModal 
+            isOpen={showKycModal} 
+            onClose={() => setShowKycModal(false)} 
+            onSuccess={() => {
+              setShowKycModal(false);
+              setIsKycVerified(true);
+              setIsChatOpen(true); 
+            }} 
+          />
+
           {isChatOpen && profile && (
             <ChatWindow
               currentUserId={String(currentUserId)}

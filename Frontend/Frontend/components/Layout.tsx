@@ -27,7 +27,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-200 font-sans selection:bg-cyan-500/30 flex flex-col relative">
+    <div className="min-h-screen bg-slate-950 text-slate-200 font-sans selection:bg-cyan-500/30 flex flex-col relative overflow-x-hidden">
       
       <header className={`fixed top-0 w-full z-[99999] transition-all duration-300 ${
         isScrolled || mobileMenuOpen 
