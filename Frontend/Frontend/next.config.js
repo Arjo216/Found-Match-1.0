@@ -7,7 +7,8 @@ const withPwa = nextPwa({
   dest: 'public',
   register: true,
   skipWaiting: true,
-  disable: process.env.NEXT_PUBLIC_APP_ENV === 'local',
+  // Change this line to forcefully disable it in dev mode:
+  disable: process.env.NODE_ENV === 'development',
 });
 
 const ContentSecurityPolicy = `
@@ -30,6 +31,9 @@ const securityHeaders = [
 
 module.exports = withPwa({
   reactStrictMode: false,
+  
+  // --- ADDED THIS TO FIX 3D ENGINE RENDERING ---
+  transpilePackages: ['three', '@react-three/fiber', '@react-three/drei'],
   
   // --- BUILD FIX: Ignore TypeScript/ESLint errors during Docker build ---
   typescript: {
@@ -118,4 +122,3 @@ module.exports = withPwa({
     return config;
   },
 });
-

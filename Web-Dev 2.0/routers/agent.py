@@ -14,7 +14,8 @@ import PyPDF2
 from fastapi import APIRouter, UploadFile, File, Form, Depends
 # ... your other imports ...
 
-router = APIRouter(tags=["AI Agent"])
+#router = APIRouter(tags=["AI Agent"])
+router = APIRouter()
 
 class ScreenRequest(BaseModel):
     project_id: int

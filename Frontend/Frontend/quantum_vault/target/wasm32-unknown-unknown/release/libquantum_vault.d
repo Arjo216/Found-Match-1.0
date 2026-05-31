@@ -1,0 +1,1 @@
+C:\Projects\Found_Match\Found_Match_application\Frontend\Frontend\quantum_vault\target\wasm32-unknown-unknown\release\libquantum_vault.rlib: C:\Projects\Found_Match\Found_Match_application\Frontend\Frontend\quantum_vault\src\lib.rs

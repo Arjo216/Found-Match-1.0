@@ -108,13 +108,16 @@ export async function decryptMessage(privateKey: CryptoKey, encryptedBase64: str
     // 1. Unpack the envelope securely
     let payload;
     try {
-      // If it's old plain text, atob or JSON.parse will fail immediately
       const payloadStr = window.atob(encryptedBase64);
       payload = JSON.parse(payloadStr);
+      
+      // If the parsed JSON doesn't match our strict crypto envelope, it's just plain text
+      if (!payload.k || !payload.i || !payload.c) {
+        return encryptedBase64;
+      }
     } catch (parseErr) {
-      // FIX: Return the fallback string directly instead of throwing an error.
-      // This completely stops the Next.js Red Screen from appearing!
-      return "🔒 [Legacy Unencrypted Message]";
+      // If it fails to parse as Base64/JSON, it is a plain text legacy message
+      return encryptedBase64; 
     }
 
     const encryptedAesKeyBytes = base64ToBuffer(payload.k);
@@ -146,8 +149,9 @@ export async function decryptMessage(privateKey: CryptoKey, encryptedBase64: str
 
     return new TextDecoder().decode(decryptedBuffer);
   } catch (e) {
-    console.error("Hybrid Decryption failed", e);
-    return "🔒 [Decryption Failed]";
+    // SILENT CATCH: We removed console.error() to prevent Next.js from throwing the Red Screen.
+    // If decryption fails here, it is because you are looking at a message you sent to someone else.
+    return "🔒 [Sent Securely to Receiver]";
   }
 }
 

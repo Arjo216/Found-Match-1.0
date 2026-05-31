@@ -1,0 +1,21 @@
+[package]
+name = "quantum_vault"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+# The bridge between Rust and Next.js
+wasm-bindgen = "0.2"
+
+# NIST-compliant Post-Quantum Cryptography (Kyber)
+pqc_kyber = "0.7"
+
+# Standard Cryptography for data encryption (AES-GCM)
+aes-gcm = "0.10"
+
+# Critical: Allows Rust to securely generate random numbers inside the browser JS engine
+rand_core = { version = "0.6", features = ["getrandom"] }
+getrandom = { version = "0.2", features = ["js"] }

@@ -3,6 +3,7 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 import { auth, setAuthToken, clearAuthToken, api } from "../lib/api";
 import { useRouter } from "next/router";
 import { generateRSAKeyPair, exportPublicKey, exportPrivateKey } from "../lib/crypto";
+import Cookies from "js-cookie"; // <-- NEW IMPORT
 
 type User = {
   id: number | string;
@@ -75,6 +76,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           console.error("Invalid token on load, logging out");
           clearAuthToken();
           setUser(null);
+          Cookies.remove("token"); // Clean up cookie if local storage token is invalid
         }
       }
       setLoading(false);
@@ -86,6 +88,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setAuthToken(token);
     setUser(userData);
     
+    // --- NEW: Set the cookie so the Next.js middleware can see it ---
+    Cookies.set("token", token, { expires: 1, secure: true });
+    
     // FIX: Safely extract the ID and verify it exists before generating keys
     const currentId = userData.id || userData.user_id;
     if (currentId) {
@@ -96,6 +101,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = () => {
     clearAuthToken();
     setUser(null);
+    
+    // --- NEW: Clear the cookie on logout so the Middleware locks the routes ---
+    Cookies.remove("token");
+    
     router.push("/login");
   };
 
