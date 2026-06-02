@@ -33,6 +33,118 @@ FoundMatch moves beyond traditional directories by operating as a secure **Insti
 * **Institutional Dashboards:** Real-time data aggregation displaying profile views, active negotiations, and trajectory algorithms.
 * **Kanban Pipeline:** A native HTML5 drag-and-drop board to track relationships from *Sourced* to *Term Sheet* to *Closed*.
 
+---
+
+## 🏗️ System Architecture
+```mermaid
+flowchart TB
+    %% ==========================================
+    %% 🎨 CUSTOM THEME & STYLING (Dark Mode FinTech)
+    %% ==========================================
+    classDef user fill:#0f172a,stroke:#38bdf8,stroke-width:2px,color:#fff,rx:10px,ry:10px
+    classDef frontend fill:#1e1b4b,stroke:#8b5cf6,stroke-width:2px,color:#fff,rx:8px,ry:8px
+    classDef security fill:#4c0519,stroke:#f43f5e,stroke-width:2px,color:#fff,rx:8px,ry:8px
+    classDef backend fill:#020617,stroke:#6366f1,stroke-width:2px,color:#fff,rx:8px,ry:8px
+    classDef ml fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#fff,rx:8px,ry:8px
+    classDef db fill:#451a03,stroke:#f59e0b,stroke-width:2px,color:#fff,rx:8px,ry:8px
+    classDef external fill:#171717,stroke:#a3a3a3,stroke-width:2px,color:#fff,stroke-dasharray: 5 5,rx:8px,ry:8px
+    classDef gate fill:#000000,stroke:#eab308,stroke-width:3px,color:#fef08a,rx:12px,ry:12px
+
+    %% ==========================================
+    %% 🧑‍💼 ACTORS
+    %% ==========================================
+    U1((🧑‍💼 Founder)):::user
+    U2((💼 Investor)):::user
+
+    %% ==========================================
+    %% 🌐 FRONTEND / CLIENT TIER (Zero-Knowledge)
+    %% ==========================================
+    subgraph Client_Tier ["🌐 ZERO-KNOWLEDGE CLIENT (Next.js / React)"]
+        direction TB
+        UI["🖥️ FoundMatch UI<br/>(Kanban Pipeline & Match Grid)"]:::frontend
+        Crypto["🔐 WebCrypto Engine<br/>(RSA-OAEP & AES-GCM Key Gen)"]:::security
+        Copilot["🤖 Executive Co-Pilot<br/>(Floating Document Analyzer)"]:::frontend
+        Ghost["👻 Chat Ghostwriter<br/>(Contextual Reply Generator)"]:::frontend
+
+        UI <--> Crypto
+        UI <--> Copilot
+        UI <--> Ghost
+    end
+
+    U1 <-->|Client-Side Encryption| UI
+    U2 <-->|Client-Side Decryption| UI
+
+    %% ==========================================
+    %% 🛡️ REGULATORY GATEWAY
+    %% ==========================================
+    KYC{"🛡️ KYC / AML Sandbox Gate<br/>(Identity Verification & Magic Numbers)"}:::gate
+
+    Client_Tier ==>|Authenticated JWT Requests| KYC
+
+    %% ==========================================
+    %% ⚙️ BACKEND TIER (FastAPI Microservice)
+    %% ==========================================
+    subgraph Backend_Tier ["⚙️ FASTAPI MICROSERVICE (Python)"]
+        direction TB
+        REST["🔄 Core REST API<br/>(Profiles, Projects, Filtering)"]:::backend
+        WS["⚡ WebSocket Manager<br/>(Real-Time Deal Rooms)"]:::backend
+        Vault["🏦 E2EE Vault Router<br/>(Blind Ciphertext & File Transit)"]:::security
+        AgentRouter["🧠 AI Agent Router<br/>(Prompt Sanitization & Safety)"]:::backend
+    end
+
+    KYC ==>|Auth Pass| REST
+    KYC ==>|Auth Pass| WS
+    KYC ==>|Auth Pass| Vault
+    KYC ==>|Auth Pass| AgentRouter
+
+    %% ==========================================
+    %% 🧬 ML ENGINE TIER (PyTorch Microservice)
+    %% ==========================================
+    subgraph ML_Tier ["🧬 RECOMMENDATION ENGINE (PyTorch)"]
+        direction TB
+        InferAPI["🎯 Inference API Gateway"]:::ml
+        SBERT["📝 Sentence-BERT<br/>(Semantic NLP Pitch Parsing)"]:::ml
+        LightGCN["🕸️ LightGCN<br/>(User-Item Graph Connectivity)"]:::ml
+        Hyb["⚖️ Hybrid Scorer<br/>(+ Premium Priority Multipliers)"]:::ml
+
+        InferAPI --> SBERT
+        InferAPI --> LightGCN
+        SBERT --> Hyb
+        LightGCN --> Hyb
+    end
+
+    REST <==>|Predict Request / JSON Response| InferAPI
+
+    %% ==========================================
+    %% 🗄️ PERSISTENCE TIER (Supabase)
+    %% ==========================================
+    subgraph Data_Tier ["🗄️ PERSISTENCE LAYER (Supabase / PostgreSQL)"]
+        direction TB
+        RLS{"🔒 Row Level Security<br/>(Cryptographic Query Isolation)"}:::security
+        DB[("🐘 Relational Database<br/>(Users, Projects, Interactions)")]:::db
+        CipherDB[("🗃️ Ciphertext Storage<br/>(Unreadable Encrypted Blobs)")]:::db
+        
+        RLS --> DB
+        RLS --> CipherDB
+    end
+
+    REST <==> RLS
+    Vault ==>|Blind Write| RLS
+    WS ==>|Asynchronous Save| RLS
+
+    %% ==========================================
+    %% 🌩️ EXTERNAL APIs
+    %% ==========================================
+    subgraph Ext_Tier ["🌩️ EXTERNAL CLOUD COMPUTE"]
+        Llama["🦙 Groq API (Llama-3-70b)<br/>(Ultra-Low Latency Inference)"]:::external
+    end
+
+    AgentRouter <==>|Sanitized System Prompts| Llama
+    Copilot -.->|Diligence Queries| AgentRouter
+    Ghost -.->|Encrypted Context| AgentRouter
+```
+---
+
 # FoundMatch: Institutional Capital Allocation Platform
 
 FoundMatch is an elite, AI-driven networking and deal-flow platform designed to connect high-growth startup founders with institutional investors, venture capitalists, and private equity firms. 
@@ -79,8 +191,10 @@ docker-compose up --build
 
 ---
 
-### 2. The Frontend (`frontend/README.md`)
+### 2. The Frontend (`Frontend/Frontend/README.md`)
 *This focuses on your stunning glassmorphism UI, client-side encryption logic, and responsive design.*
+
+*Updated frontend README to highlight the complex WebCrypto logic and stunning Glassmorphism UI components.*
 <div align="center">
 
   
@@ -99,9 +213,6 @@ docker-compose up --build
 - **Real-Time Deal Rooms:** Seamless WebSocket integration for instant, encrypted founder-investor communications.
 - **Interactive Kanban CRM:** Native HTML5 Drag-and-Drop deal flow management (Sourced ➡️ Term Sheet ➡️ Closed).
 - **Executive AI Co-Pilot:** A stunning, centralized modal interface for interacting with the platform's AI, complete with context-aware smart suggestions and file staging.
-
-### 3. The Frontend `Frontend/Frontend/README.md`
-*Update frontend README to highlight the complex WebCrypto logic and stunning Glassmorphism UI components.*
 
 # FoundMatch Frontend: Next.js & Client-Side Crypto
 
@@ -161,7 +272,7 @@ If you make significant UI architectural changes, clear the Next.js cache to for
 ```Bash
 rm -rf .next
 pnpm run dev
-
+```
 ---
 
 ### 3. The Backend (`backend/README.md`)
