@@ -204,6 +204,7 @@ GEMINI_API_KEY=AIzaSy_your_gemini_key
 # Frontend (.env.local)
 NEXT_PUBLIC_API_URL=http://localhost:8000
 ```
+---
 # FoundMatch: Institutional Capital Allocation Platform
 
 FoundMatch is an elite, AI-driven networking and deal-flow platform designed to connect high-growth startup founders with institutional investors, venture capitalists, and private equity firms. 
