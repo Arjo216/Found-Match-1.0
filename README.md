@@ -1,41 +1,65 @@
 <div align="center">
-  
-# 🌐 FoundMatch
-**The Zero-Trust, AI-Driven Institutional Capital Platform**
 
-[![Next.js](https://img.shields.io/badge/Next.js-14-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-009688?style=for-the-badge&logo=fastapi)](https://fastapi.tiangolo.com/)
-[![PyTorch](https://img.shields.io/badge/PyTorch-AI_Engine-EE4C2C?style=for-the-badge&logo=pytorch)](https://pytorch.org/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-RLS_Secured-336791?style=for-the-badge&logo=postgresql)](https://postgresql.org/)
-[![Encryption](https://img.shields.io/badge/Security-AES--256_%2B_RSA--2048-red?style=for-the-badge)](#)
+# 🌌 FoundMatch
+**The AI-Orchestrated Institutional Capital Allocation OS (v3.0)**
 
-*FoundMatch is a professional, institutional-grade platform that connects startup founders with venture capital. It combines state-of-the-art Graph Neural Networks for matchmaking with military-grade Zero-Knowledge encryption for secure deal-flow communications.*
+[![Next.js 14](https://img.shields.io/badge/Next.js_14-050314?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![LangGraph](https://img.shields.io/badge/LangGraph_Swarms-D946EF?style=for-the-badge&logo=langchain&logoColor=white)](#)
+[![PyTorch](https://img.shields.io/badge/PyTorch_GNN-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white)](https://pytorch.org/)
+[![PostgreSQL](https://img.shields.io/badge/pgvector_RLS-336791?style=for-the-badge&logo=postgresql&logoColor=white)](https://postgresql.org/)
+[![Security](https://img.shields.io/badge/Security-AES_256_%2B_RSA_2048-10B981?style=for-the-badge)](#)
+
+*FoundMatch replaces legacy VC deal flow with a localized multi-agent swarm. We semantically match founders, autonomously negotiate term sheets, and instantly engineer Day-1 cloud infrastructure.*
+
+[Explore Platform](#-the-institutional-arsenal) • [System Architecture](#%EF%B8%8F-system-architecture) • [Security Posture](#%EF%B8%8F-the-security-perimeter) • [Quick Start](#-quick-start-deployment)
 
 </div>
 
 ---
 
-## 🚀 Core Platform Architecture
+## 🚀 Overview
 
-FoundMatch moves beyond traditional directories by operating as a secure **Institutional Operating System**.
+FoundMatch is an elite, zero-trust platform designed to eliminate friction in venture capital. By combining state-of-the-art **Graph Neural Networks (GNNs)** for matchmaking, **LangGraph Multi-Agent Swarms** for autonomous financial negotiation, and **Military-Grade E2E Encryption** for data privacy, FoundMatch operates as a complete end-to-end Institutional Operating System.
 
-### 🧠 The Intelligence Layer (Hybrid AI)
-* **Graph Neural Networks (LightGCN):** Predicts high-probability matches based on network interaction history and collaborative filtering.
-* **Semantic Analysis (Sentence-BERT):** Reads pitch decks and investor theses to score contextual alignment (0-100% Global Match Index).
-* **Ephemeral Executive Co-Pilot:** An in-memory LLM that reads encrypted pitch decks, provides strategic critiques, and instantly destroys the file from server RAM to maintain absolute data privacy.
+---
 
-### 🛡️ The Security Perimeter (Zero-Trust)
-* **Zero-Knowledge Deal Rooms:** End-to-End Encrypted (E2EE) WebSockets. Messages and files are encrypted in the browser using hybrid RSA-2048 and AES-256. The backend database only stores cryptographic noise.
-* **PostgreSQL Row-Level Security (RLS):** A strict "Default Deny" database posture. Data APIs are completely blacked out to the public internet.
-* **The Sentry Autonomous Defense:** Custom ASGI middleware that actively blocks scraping, volumetric API attacks, and unauthorized payload anomalies.
+## ⚡ The Institutional Arsenal
 
-### 📊 The Deal Flow CRM
-* **Institutional Dashboards:** Real-time data aggregation displaying profile views, active negotiations, and trajectory algorithms.
-* **Kanban Pipeline:** A native HTML5 drag-and-drop board to track relationships from *Sourced* to *Term Sheet* to *Closed*.
+### 1. Deal Galaxy Vector Engine 🌌
+Stop reading pitch decks. Our 384-dimensional `pgvector` Graph Neural Network (custom LightGCN architecture) maps investor theses directly to founder realities. 
+* **Semantic Analysis:** Sentence-BERT reads encrypted pitch decks to score contextual alignment, generating a 0-100% Global Match Index in milliseconds.
+* **Orbital UI:** Visualizes deal flow in an interactive, 3D spatial interface.
+
+### 2. Autonomous LangGraph Swarms 🤖
+When a deal enters the "War Room," human input is locked, and AI proxies take over.
+* **The Investor Agent:** Conducts brutal financial due diligence and fights for optimal equity.
+* **The Founder Agent:** Defends valuation and negotiates capital requirements dynamically.
+* **The Legal Drafter:** Upon reaching a mathematical consensus, an M&A Counsel AI instantly mints a beautifully formatted, Markdown-based Official Term Sheet with Post-Money calculations.
+
+### 3. CodeOps-ULTRA (Post-Funding Execution) 💻
+Once the Term Sheet is sealed, the capital is unlocked directly to our DevSecOps swarm.
+* **Instant Engineering:** The Architect and Developer agents instantly build the startup's minimal viable product (MVP). From Next.js frontends to Post-Quantum Rust blockchains (implementing Kyber, FrodoKEM, and NewHope).
+* **Automated Audits:** A DevSecOps agent scans the generated codebase for hardcoded secrets and injection vulnerabilities, providing a PASS/FAIL deployment verdict before rendering the code in the browser IDE.
+
+---
+
+## 🛡️ The Security Perimeter
+
+FoundMatch operates on a strict **Default Deny / Zero-Knowledge** posture.
+
+| Security Layer | Description |
+| :--- | :--- |
+| **Hybrid E2EE Vault** | Native Web Crypto API generates RSA-2048 key pairs locally. Files (PDFs/Cap Tables) are encrypted via AES-GCM, and keys are wrapped in RSA. The backend server acts as a blind courier storing only cryptographic noise. |
+| **Database Fortress** | PostgreSQL Row-Level Security (RLS) policies completely blackout public API access. Data is only exposed to strictly authenticated backend SQLAlchemy connections. |
+| **Sentry Autonomous Defense** | Custom ASGI middleware actively blocks scraping, volumetric API attacks, and unauthorized payload anomalies before they reach the routing layer. |
+| **Ephemeral RAM Execution** | Pitch decks parsed by the Executive Co-Pilot are held strictly in system memory, fed to the LLM, and instantly destroyed. |
+| **Regulatory KYC "Soft Gate"** | A built-in identity verification sandbox that blocks unverified participants from initiating secure Deal Rooms. |
 
 ---
 
 ## 🏗️ System Architecture
+
 ```mermaid
 flowchart TB
     %% ==========================================
