@@ -77,7 +77,7 @@ flowchart TB
     %% ==========================================
     %% 🛡️ REGULATORY GATEWAY
     %% ==========================================
-    KYC{"🛡️ KYC / AML Sandbox Gate<br/>(Identity Verification & Magic Numbers)"}:::gate
+    KYC{"🛡️ KYC / AML Sandbox Gate<br/>(Identity Verification)"}:::gate
 
     Client_Tier ==>|Authenticated JWT Requests| KYC
 
