@@ -228,24 +228,30 @@ FoundMatch is an elite, AI-driven networking and deal-flow platform designed to 
 
 ```text
 Found_Match/
-├── frontend/             # Next.js 14 Client (UI, WebCrypto API, WebSockets)
-├── backend/              # FastAPI Server (Auth, RLS Admin, Sentry, ML Router)
-├── ml_engine/            # PyTorch Pipelines (LightGCN & NLP Models)
+├── frontend/             # Next.js 14 Client (Glassmorphism UI, WebCrypto API, CodeOps IDE)
+├── backend/              # FastAPI Server (LangGraph Orchestrator, Sentry, WebSockets)
+├── ml_engine/            # PyTorch Pipelines (LightGCN, NLP Semantic Matching)
 ├── data/                 # Processed Datasets & Model Weights (.pth)
+├── quantum_vault/        # Post-Quantum Rust Blockchain Architectures (CodeOps Generated)
 └── docker-compose.yml    # Full-stack Container Orchestration
 ```
 
 ### ⚡ Quick Start (Docker)
 Launch the entire ecosystem with a single command:
 
-```Bash
-# 1. Clone the repository
+### 3. Build and Launch
+
+```bash
+# Clone the repository
 git clone [https://github.com/Arjo216/Found-Match-1.0.git](https://github.com/Arjo216/Found-Match-1.0.git)
 cd Found-Match-1.0
 
-# 2. Build and launch all microservices
+# Launch via Docker Compose (Recommended)
 docker-compose up --build
 ```
+
+* **Frontend UI:** `http://localhost:3000`
+* **FastAPI Swagger Docs:** `http://localhost:8000/docs`
 ### Frontend runs on localhost:3000 | Backend API runs on localhost:8000
 
 ---
@@ -383,9 +389,14 @@ This is the central nervous system of FoundMatch, built for high concurrency, re
 ## 🔑 Environment Requirements
 Make sure your `.env` includes:
 ```env
+# Backend (.env)
 DATABASE_URL=postgresql://user:password@localhost/foundmatch
-SECRET_KEY=your_jwt_secret
-GROQ_API_KEY=gsk_your_api_key_here
+SECRET_KEY=your_highly_secure_jwt_secret
+GROQ_API_KEY=gsk_your_groq_key
+GEMINI_API_KEY=AIzaSy_your_gemini_key
+
+# Frontend (.env.local)
+NEXT_PUBLIC_API_URL=http://localhost:8000
 ENV=development
 ```
 
@@ -429,3 +440,8 @@ uvicorn main:app --reload --port 8000
 ***Visit http://localhost:8000/docs to view the interactive Swagger API documentation.***
 
 ---
+## 📜 License & Legal
+
+**FoundMatch Institutional Capital Allocation OS** Copyright © 2026. All Rights Reserved.
+
+*Disclaimer: FoundMatch utilizes generative AI and experimental cryptographic protocols. Do not use for the deployment of real-world capital without comprehensive legal and human financial due diligence.*
