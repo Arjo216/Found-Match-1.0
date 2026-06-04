@@ -169,6 +169,41 @@ flowchart TB
 ```
 ---
 
+### 🖥️ Frontend Stack (Next.js 14)
+* **Framework:** React / Next.js (TypeScript).
+* **UI/UX:** Premium Glassmorphism design system utilizing `backdrop-blur`, complex gradient meshes, Framer Motion transitions, and responsive Tailwind CSS grids.
+* **Phase-Shift Routing:** Seamless transitions from casual secure messaging (The Lobby) to full-screen autonomous negotiation terminals (The War Room).
+
+### ⚙️ Backend Stack (FastAPI + Python 3.10+)
+* **Asynchronous Concurrency:** Built on Starlette/Uvicorn for non-blocking WebSocket E2EE chat relays.
+* **Dual-Engine AI Fallback:** Primary inference routed through Groq (Llama-3-70b) for ultra-low latency, with an automatic failsafe cascade to Google Gemini (1.5-Flash) to prevent rate-limit crashes.
+* **Database:** SQLAlchemy ORM interfacing with Supabase/PostgreSQL.
+
+---
+
+## 🏁 Quick Start Deployment
+
+Launch the entire FoundMatch ecosystem with a single command.
+
+### 1. Prerequisites
+* Node.js (>= 18.x) & pnpm
+* Python 3.10+
+* Docker & Docker Compose
+* PostgreSQL Database (Local or Supabase)
+
+### 2. Environment Variables
+Create a `.env` file in both the `frontend` and `backend` directories.
+
+```env
+# Backend (.env)
+DATABASE_URL=postgresql://user:password@localhost/foundmatch
+SECRET_KEY=your_highly_secure_jwt_secret
+GROQ_API_KEY=gsk_your_groq_key
+GEMINI_API_KEY=AIzaSy_your_gemini_key
+
+# Frontend (.env.local)
+NEXT_PUBLIC_API_URL=http://localhost:8000
+```
 # FoundMatch: Institutional Capital Allocation Platform
 
 FoundMatch is an elite, AI-driven networking and deal-flow platform designed to connect high-growth startup founders with institutional investors, venture capitalists, and private equity firms. 
